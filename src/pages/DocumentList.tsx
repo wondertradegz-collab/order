@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { Button, Input, Select, ConfirmModal } from '../components/common';
+import { Button, Input, Select, ConfirmModal, ChipGroup, Badge, Card, EmptyState } from '../components/common';
 import {
   formatCurrency,
   formatDate,
@@ -131,13 +131,25 @@ export function DocumentList({ type }: DocumentListProps) {
     { value: 'amount_low', label: '金額: 低い順' },
   ];
 
+  // Calculate status counts
+  const statusCounts = useMemo(() => {
+    const allDocs = documents.filter((d) => d.type === type);
+    const counts: Record<string, number> = { all: allDocs.length };
+    statusOptions.forEach((opt) => {
+      if (opt.value !== 'all') {
+        counts[opt.value] = allDocs.filter((d) => d.status === opt.value).length;
+      }
+    });
+    return counts;
+  }, [documents, type, statusOptions]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{typeLabel}</h1>
-          <p className="text-gray-500 mt-1">{typeLabel}の一覧と管理</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{typeLabel}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{typeLabel}の一覧と管理</p>
         </div>
         <Button onClick={() => navigate(`${basePath}/new`)}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,9 +159,22 @@ export function DocumentList({ type }: DocumentListProps) {
         </Button>
       </div>
 
+      {/* Status Filter Chips */}
+      <div className="overflow-x-auto pb-2">
+        <ChipGroup
+          options={statusOptions.map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+            count: statusCounts[opt.value] || 0,
+          }))}
+          value={statusFilter}
+          onChange={(val) => setStatusFilter(val as string)}
+        />
+      </div>
+
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <Card padding="sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
             <Input
               placeholder="番号、顧客名で検索..."
@@ -157,18 +182,13 @@ export function DocumentList({ type }: DocumentListProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
           <div className="flex gap-2">
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               placeholder="開始日"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <span className="flex items-center text-gray-400">〜</span>
             <input
@@ -176,7 +196,7 @@ export function DocumentList({ type }: DocumentListProps) {
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               placeholder="終了日"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <Select
@@ -185,16 +205,14 @@ export function DocumentList({ type }: DocumentListProps) {
             onChange={(val) => setSortBy(val as SortOption)}
           />
         </div>
-      </div>
+      </Card>
 
       {/* Action Bar */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {selectedIds.size > 0 && (
             <>
-              <span className="text-sm text-blue-700">
-                {selectedIds.size}件選択中
-              </span>
+              <Badge color="blue">{selectedIds.size}件選択中</Badge>
               <Button
                 variant="danger"
                 size="sm"
@@ -259,20 +277,24 @@ export function DocumentList({ type }: DocumentListProps) {
 
       {/* Document List */}
       {filteredDocuments.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{typeLabel}がありません</h3>
-          <p className="text-gray-500 mb-4">最初の{typeLabel}を作成してください</p>
-          <Button onClick={() => navigate(`${basePath}/new`)}>{typeLabel}を作成</Button>
-        </div>
+        <Card>
+          <EmptyState
+            icon={
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            }
+            title={`${typeLabel}がありません`}
+            description={`最初の${typeLabel}を作成してください`}
+            action={<Button onClick={() => navigate(`${basePath}/new`)}>{typeLabel}を作成</Button>}
+          />
+        </Card>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
@@ -307,9 +329,9 @@ export function DocumentList({ type }: DocumentListProps) {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredDocuments.map((doc) => (
-                  <tr key={doc.id} className={`hover:bg-gray-50 ${selectedIds.has(doc.id) ? 'bg-blue-50' : ''}`}>
+                  <tr key={doc.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${selectedIds.has(doc.id) ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
@@ -326,18 +348,18 @@ export function DocumentList({ type }: DocumentListProps) {
                         {doc.documentNumber}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-gray-900">
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">
                       {getCustomerName(doc.customerId)}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">
+                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                       {formatDate(doc.issueDate)}
                     </td>
                     {type === 'invoice' && (
-                      <td className="px-6 py-4 text-gray-500">
+                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         {formatDate((doc as Invoice).dueDate)}
                       </td>
                     )}
-                    <td className="px-6 py-4 text-right font-medium text-gray-900">
+                    <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
                       {formatCurrency(doc.total)}
                     </td>
                     <td className="px-6 py-4">
@@ -385,17 +407,17 @@ export function DocumentList({ type }: DocumentListProps) {
           </div>
 
           {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-gray-200">
+          <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredDocuments.map((doc) => (
               <Link
                 key={doc.id}
                 to={`${basePath}/${doc.id}`}
-                className="block p-4 hover:bg-gray-50"
+                className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="font-medium text-blue-600">{doc.documentNumber}</p>
-                    <p className="text-sm text-gray-900">{getCustomerName(doc.customerId)}</p>
+                    <p className="font-medium text-blue-600 dark:text-blue-400">{doc.documentNumber}</p>
+                    <p className="text-sm text-gray-900 dark:text-white">{getCustomerName(doc.customerId)}</p>
                   </div>
                   <span
                     className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -406,13 +428,13 @@ export function DocumentList({ type }: DocumentListProps) {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">{formatDate(doc.issueDate)}</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(doc.total)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{formatDate(doc.issueDate)}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(doc.total)}</span>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Delete Confirmation */}

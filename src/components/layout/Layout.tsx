@@ -5,8 +5,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { CommandPalette } from '../common/CommandPalette';
 import { BackupNotification } from '../common/BackupNotification';
 import { SyncStatusIndicator } from '../common/SyncStatusIndicator';
-import { SettingsDropdown } from './SettingsDropdown';
-import { ManualModal } from './ManualModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,10 +13,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isManualOpen, setIsManualOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  useTheme(); // Theme context is needed for dark mode but used in SettingsDropdown
+  useTheme();
   const { t } = useLanguage();
 
   const menuItems = [
@@ -77,12 +74,9 @@ export function Layout({ children }: LayoutProps) {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('nav.appName')}</h1>
-          <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
+          <SyncStatusIndicator />
         </div>
       </header>
-
-      {/* Manual Modal */}
-      <ManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
@@ -160,11 +154,8 @@ export function Layout({ children }: LayoutProps) {
             })}
           </nav>
 
-          {/* Settings (Desktop) */}
+          {/* Sync Status (Desktop) */}
           <div className="hidden lg:flex flex-col gap-3 px-3 py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-center">
-              <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
-            </div>
             <div className="flex justify-center">
               <SyncStatusIndicator />
             </div>

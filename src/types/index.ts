@@ -98,6 +98,18 @@ export interface Receipt extends BaseDocument {
 // 統合型
 export type Document = Quotation | Invoice | Receipt;
 
+// 電子印
+export interface ElectronicStamp {
+  id: string;
+  name: string; // 印鑑の名前（例：承認印、担当印）
+  text: string; // 印鑑に表示するテキスト（例：田中、鈴木）
+  shape: 'circle' | 'square'; // 形状
+  color: string; // 色（例：#FF0000）
+  size: number; // サイズ（px）
+  showDate: boolean; // 日付を表示するか
+  createdAt: string;
+}
+
 // 会社情報（自社）
 export interface CompanyInfo {
   name: string;
@@ -128,6 +140,7 @@ export interface AppSettings {
     invoice: number;
     receipt: number;
   };
+  stamps: ElectronicStamp[]; // 電子印のリスト
 }
 
 // ダッシュボード用の統計

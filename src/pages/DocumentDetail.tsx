@@ -483,6 +483,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
           document={document}
           customer={customer}
           companyInfo={settings.companyInfo}
+          stamps={settings.stamps || []}
         />
       </div>
 
@@ -498,6 +499,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
             document={document}
             customer={customer}
             companyInfo={settings.companyInfo}
+            stamps={settings.stamps || []}
           />
         </div>
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t">

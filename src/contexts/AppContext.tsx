@@ -12,6 +12,7 @@ import type {
   LineItem,
   Product,
   PaymentRecord,
+  ElectronicStamp,
 } from '../types';
 
 // デフォルト設定
@@ -40,6 +41,7 @@ const defaultSettings: AppSettings = {
     invoice: 1,
     receipt: 1,
   },
+  stamps: [],
 };
 
 interface AppContextType {
@@ -80,6 +82,11 @@ interface AppContextType {
   // 設定
   settings: AppSettings;
   updateSettings: (settings: Partial<AppSettings>) => void;
+
+  // 電子印
+  addStamp: (stamp: Omit<ElectronicStamp, 'id' | 'createdAt'>) => ElectronicStamp;
+  updateStamp: (id: string, stamp: Partial<ElectronicStamp>) => void;
+  deleteStamp: (id: string) => void;
 
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
@@ -374,6 +381,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [setSettings]);
 
+  // 電子印操作
+  const addStamp = useCallback((stamp: Omit<ElectronicStamp, 'id' | 'createdAt'>): ElectronicStamp => {
+    const now = new Date().toISOString();
+    const newStamp: ElectronicStamp = {
+      ...stamp,
+      id: uuidv4(),
+      createdAt: now,
+    };
+    setSettings((prev) => ({
+      ...prev,
+      stamps: [...(prev.stamps || []), newStamp],
+    }));
+    return newStamp;
+  }, [setSettings]);
+
+  const updateStamp = useCallback((id: string, stamp: Partial<ElectronicStamp>) => {
+    setSettings((prev) => ({
+      ...prev,
+      stamps: (prev.stamps || []).map((s) =>
+        s.id === id ? { ...s, ...stamp } : s
+      ),
+    }));
+  }, [setSettings]);
+
+  const deleteStamp = useCallback((id: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      stamps: (prev.stamps || []).filter((s) => s.id !== id),
+    }));
+  }, [setSettings]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -400,6 +438,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteProduct,
     settings,
     updateSettings,
+    addStamp,
+    updateStamp,
+    deleteStamp,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -428,6 +469,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteProduct,
     settings,
     updateSettings,
+    addStamp,
+    updateStamp,
+    deleteStamp,
     generateDocumentNumber,
     calculateTotals,
   ]);

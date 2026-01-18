@@ -1,14 +1,61 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Button, Input, Select } from '../components/common';
-import type { CompanyInfo } from '../types';
+import type { CompanyInfo, ElectronicStamp } from '../types';
+
+// Stamp Preview Component
+const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdAt'> }) => {
+  const today = new Date();
+  const dateStr = `${today.getFullYear().toString().slice(2)}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+
+  const baseStyle: React.CSSProperties = {
+    width: `${stamp.size}px`,
+    height: `${stamp.size}px`,
+    border: `2px solid ${stamp.color}`,
+    color: stamp.color,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: `${stamp.size / 4}px`,
+    fontWeight: 'bold',
+    lineHeight: 1.2,
+    backgroundColor: 'white',
+  };
+
+  if (stamp.shape === 'circle') {
+    baseStyle.borderRadius = '50%';
+  } else {
+    baseStyle.borderRadius = '4px';
+  }
+
+  return (
+    <div style={baseStyle}>
+      <span style={{ fontSize: `${stamp.size / 3}px` }}>{stamp.text || '印'}</span>
+      {stamp.showDate && (
+        <span style={{ fontSize: `${stamp.size / 5}px` }}>{dateStr}</span>
+      )}
+    </div>
+  );
+};
 
 export function Settings() {
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, addStamp, updateStamp, deleteStamp } = useApp();
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(settings.companyInfo);
   const [defaultTaxRate, setDefaultTaxRate] = useState(settings.defaultTaxRate);
   const [prefixes, setPrefixes] = useState(settings.documentNumberPrefix);
   const [saved, setSaved] = useState(false);
+
+  // Stamp editor state
+  const [editingStamp, setEditingStamp] = useState<Partial<ElectronicStamp> | null>(null);
+  const [newStamp, setNewStamp] = useState<Omit<ElectronicStamp, 'id' | 'createdAt'>>({
+    name: '',
+    text: '',
+    shape: 'circle',
+    color: '#FF0000',
+    size: 50,
+    showDate: true,
+  });
 
   useEffect(() => {
     setCompanyInfo(settings.companyInfo);
@@ -177,6 +224,203 @@ export function Settings() {
             請求書 {prefixes.invoice}-{String(settings.nextNumbers.invoice).padStart(5, '0')} /
             領収書 {prefixes.receipt}-{String(settings.nextNumbers.receipt).padStart(5, '0')}
           </p>
+        </div>
+      </div>
+
+      {/* Electronic Stamps */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">電子印</h2>
+        <p className="text-sm text-gray-500 mb-4">書類に押印する電子印を作成・管理します</p>
+
+        {/* Existing Stamps */}
+        {(settings.stamps || []).length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">登録済みの電子印</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {(settings.stamps || []).map((stamp) => (
+                <div key={stamp.id} className="border rounded-lg p-3 text-center">
+                  <div className="flex justify-center mb-2">
+                    <StampPreview stamp={stamp} />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">{stamp.name}</p>
+                  <div className="flex gap-1 justify-center">
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                      onClick={() => setEditingStamp(stamp)}
+                    >
+                      編集
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      className="text-xs text-red-600 hover:text-red-800"
+                      onClick={() => {
+                        if (confirm('この電子印を削除しますか？')) {
+                          deleteStamp(stamp.id);
+                        }
+                      }}
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stamp Editor Form */}
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">
+            {editingStamp ? '電子印を編集' : '新しい電子印を作成'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <Input
+                label="印鑑名（管理用）"
+                value={editingStamp ? editingStamp.name || '' : newStamp.name}
+                onChange={(e) => {
+                  if (editingStamp) {
+                    setEditingStamp({ ...editingStamp, name: e.target.value });
+                  } else {
+                    setNewStamp({ ...newStamp, name: e.target.value });
+                  }
+                }}
+                placeholder="例：承認印"
+              />
+              <Input
+                label="表示テキスト"
+                value={editingStamp ? editingStamp.text || '' : newStamp.text}
+                onChange={(e) => {
+                  if (editingStamp) {
+                    setEditingStamp({ ...editingStamp, text: e.target.value });
+                  } else {
+                    setNewStamp({ ...newStamp, text: e.target.value });
+                  }
+                }}
+                placeholder="例：田中"
+                helperText="印鑑に表示される文字（1〜3文字推奨）"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="形状"
+                  options={[
+                    { value: 'circle', label: '丸型' },
+                    { value: 'square', label: '角型' },
+                  ]}
+                  value={editingStamp ? editingStamp.shape || 'circle' : newStamp.shape}
+                  onChange={(val) => {
+                    if (editingStamp) {
+                      setEditingStamp({ ...editingStamp, shape: val as 'circle' | 'square' });
+                    } else {
+                      setNewStamp({ ...newStamp, shape: val as 'circle' | 'square' });
+                    }
+                  }}
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">色</label>
+                  <input
+                    type="color"
+                    className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                    value={editingStamp ? editingStamp.color || '#FF0000' : newStamp.color}
+                    onChange={(e) => {
+                      if (editingStamp) {
+                        setEditingStamp({ ...editingStamp, color: e.target.value });
+                      } else {
+                        setNewStamp({ ...newStamp, color: e.target.value });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  サイズ: {editingStamp ? editingStamp.size || 50 : newStamp.size}px
+                </label>
+                <input
+                  type="range"
+                  min="30"
+                  max="80"
+                  className="w-full"
+                  value={editingStamp ? editingStamp.size || 50 : newStamp.size}
+                  onChange={(e) => {
+                    const size = parseInt(e.target.value);
+                    if (editingStamp) {
+                      setEditingStamp({ ...editingStamp, size });
+                    } else {
+                      setNewStamp({ ...newStamp, size });
+                    }
+                  }}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300"
+                  checked={editingStamp ? editingStamp.showDate ?? true : newStamp.showDate}
+                  onChange={(e) => {
+                    if (editingStamp) {
+                      setEditingStamp({ ...editingStamp, showDate: e.target.checked });
+                    } else {
+                      setNewStamp({ ...newStamp, showDate: e.target.checked });
+                    }
+                  }}
+                />
+                日付を表示する
+              </label>
+            </div>
+            <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-500 mb-3">プレビュー</p>
+              <StampPreview stamp={editingStamp ? {
+                name: editingStamp.name || '',
+                text: editingStamp.text || '',
+                shape: editingStamp.shape || 'circle',
+                color: editingStamp.color || '#FF0000',
+                size: editingStamp.size || 50,
+                showDate: editingStamp.showDate ?? true,
+              } : newStamp} />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            {editingStamp ? (
+              <>
+                <Button
+                  onClick={() => {
+                    if (editingStamp.id) {
+                      updateStamp(editingStamp.id, editingStamp);
+                    }
+                    setEditingStamp(null);
+                  }}
+                >
+                  更新
+                </Button>
+                <Button variant="secondary" onClick={() => setEditingStamp(null)}>
+                  キャンセル
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => {
+                  if (!newStamp.name || !newStamp.text) {
+                    alert('印鑑名と表示テキストを入力してください');
+                    return;
+                  }
+                  addStamp(newStamp);
+                  setNewStamp({
+                    name: '',
+                    text: '',
+                    shape: 'circle',
+                    color: '#FF0000',
+                    size: 50,
+                    showDate: true,
+                  });
+                }}
+              >
+                電子印を追加
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

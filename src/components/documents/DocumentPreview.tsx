@@ -1,11 +1,12 @@
 import { forwardRef } from 'react';
 import { formatDate, getDocumentTypeLabel } from '../../utils/format';
-import type { Document, Customer, CompanyInfo, LineItem, Receipt } from '../../types';
+import type { Document, Customer, CompanyInfo, LineItem, Receipt, ElectronicStamp } from '../../types';
 
 interface DocumentPreviewProps {
   document: Document;
   customer: Customer | undefined;
   companyInfo: CompanyInfo;
+  stamps?: ElectronicStamp[];
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -19,7 +20,6 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 const formatItemDescription = (item: LineItem): string => {
   let desc = item.description || '';
-  // Add foreign currency calculation if present
   if (item.foreignAmount && item.exchangeRate && item.foreignCurrency) {
     const symbol = CURRENCY_SYMBOLS[item.foreignCurrency] || item.foreignCurrency;
     desc += `(${item.foreignAmount}${symbol} × ${item.exchangeRate}円)`;
@@ -31,17 +31,55 @@ const formatNumber = (num: number): string => {
   return '¥' + num.toLocaleString('ja-JP');
 };
 
-// Empty rows to fill table to 20 items
-const TOTAL_ROWS = 20;
+// Stamp Component
+const StampDisplay = ({ stamp }: { stamp: ElectronicStamp }) => {
+  const today = new Date();
+  const dateStr = `${today.getFullYear().toString().slice(2)}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+
+  const baseStyle: React.CSSProperties = {
+    width: `${stamp.size}px`,
+    height: `${stamp.size}px`,
+    border: `2px solid ${stamp.color}`,
+    color: stamp.color,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: `${stamp.size / 4}px`,
+    fontWeight: 'bold',
+    lineHeight: 1.2,
+  };
+
+  if (stamp.shape === 'circle') {
+    baseStyle.borderRadius = '50%';
+  } else {
+    baseStyle.borderRadius = '4px';
+  }
+
+  return (
+    <div style={baseStyle}>
+      <span style={{ fontSize: `${stamp.size / 3}px` }}>{stamp.text}</span>
+      {stamp.showDate && (
+        <span style={{ fontSize: `${stamp.size / 5}px` }}>{dateStr}</span>
+      )}
+    </div>
+  );
+};
 
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
-  ({ document, customer, companyInfo }, ref) => {
-    const taxAmount = document.items.reduce(
+  ({ document, customer, companyInfo, stamps = [] }, ref) => {
+    // Separate taxable and non-taxable items
+    const taxableItems = document.items.filter((item) => item.taxRate > 0);
+    const nonTaxableItems = document.items.filter((item) => item.taxRate === 0);
+
+    // Calculate totals by tax rate
+    const taxableSubtotal = taxableItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const nonTaxableSubtotal = nonTaxableItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const taxAmount = taxableItems.reduce(
       (sum, item) => sum + Math.floor(item.quantity * item.unitPrice * (item.taxRate / 100)),
       0
     );
 
-    // Get document title based on type
     const getDocumentTitle = () => {
       switch (document.type) {
         case 'quotation':
@@ -53,7 +91,6 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
       }
     };
 
-    // Get receipt proviso if available
     const getProviso = () => {
       if (document.type === 'receipt' && 'proviso' in document) {
         return (document as Receipt).proviso;
@@ -61,9 +98,10 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
       return null;
     };
 
-    // Create array of items padded to TOTAL_ROWS
+    // Create dynamic row items - just pad to minimum visible rows if needed
+    const minRows = Math.max(document.items.length, 5);
     const paddedItems = [...document.items];
-    while (paddedItems.length < TOTAL_ROWS) {
+    while (paddedItems.length < minRows) {
       paddedItems.push({
         id: `empty-${paddedItems.length}`,
         description: '',
@@ -106,7 +144,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             )}
 
             <p className="text-xs mb-2">
-              下記のとおりご請求申し上げます。<br />
+              下記のとおりご{document.type === 'quotation' ? '見積' : document.type === 'receipt' ? '領収' : '請求'}申し上げます。<br />
               何卒、宜しくお願い申し上げます。
             </p>
 
@@ -120,7 +158,6 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               <div className="border-t border-black pt-2 text-xs">
                 <p className="font-semibold mb-1">お振込先</p>
                 <p>{companyInfo.bankName}　{companyInfo.bankBranch}</p>
-                <p>支店番号{companyInfo.bankBranch?.match(/\d+/)?.[0] || ''}</p>
                 <p>{companyInfo.accountType} {companyInfo.accountNumber}</p>
                 <p>{companyInfo.accountName}</p>
               </div>
@@ -164,8 +201,12 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-black h-16"></td>
-                    <td className="border border-black h-16"></td>
+                    <td className="border border-black h-16 p-1 align-middle">
+                      {stamps[0] && <StampDisplay stamp={stamps[0]} />}
+                    </td>
+                    <td className="border border-black h-16 p-1 align-middle">
+                      {stamps[1] && <StampDisplay stamp={stamps[1]} />}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -183,7 +224,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               <th className="border border-black px-1 py-1 w-10 text-center">単位</th>
               <th className="border border-black px-2 py-1 w-20 text-right">単価</th>
               <th className="border border-black px-2 py-1 w-20 text-right">小計</th>
-              <th className="border border-black px-2 py-1 w-24 text-left">備考</th>
+              <th className="border border-black px-1 py-1 w-12 text-center">税</th>
             </tr>
           </thead>
           <tbody>
@@ -211,44 +252,46 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                   <td className="border border-black px-2 py-1 text-right">
                     {isRealItem && itemSubtotal > 0 ? formatNumber(itemSubtotal) : ''}
                   </td>
-                  <td className="border border-black px-2 py-1">
-                    {/* Notes column - can be used for tax rate indication */}
+                  <td className="border border-black px-1 py-1 text-center text-xs">
+                    {isRealItem && item.quantity > 0 ? (item.taxRate > 0 ? '課税' : '非課税') : ''}
                   </td>
                 </tr>
               );
             })}
-
-            {/* Tax Row */}
-            <tr>
-              <td className="border border-black px-1 py-1 text-center">
-                {TOTAL_ROWS + 1}
-              </td>
-              <td className="border border-black px-2 py-1 text-center">
-                消費税10%
-              </td>
-              <td className="border border-black px-1 py-1"></td>
-              <td className="border border-black px-1 py-1"></td>
-              <td className="border border-black px-2 py-1"></td>
-              <td className="border border-black px-2 py-1 text-right">
-                {formatNumber(taxAmount)}
-              </td>
-              <td className="border border-black px-2 py-1"></td>
-            </tr>
-
-            {/* Total Row */}
-            <tr className="bg-gray-100 font-bold">
-              <td className="border border-black px-1 py-1 text-center">計</td>
-              <td className="border border-black px-2 py-1"></td>
-              <td className="border border-black px-1 py-1"></td>
-              <td className="border border-black px-1 py-1"></td>
-              <td className="border border-black px-2 py-1"></td>
-              <td className="border border-black px-2 py-1 text-right">
-                {formatNumber(document.total)}
-              </td>
-              <td className="border border-black px-2 py-1"></td>
-            </tr>
           </tbody>
         </table>
+
+        {/* Tax Summary Section */}
+        <div className="flex justify-end mb-4">
+          <table className="border-collapse text-xs" style={{ width: '300px' }}>
+            <tbody>
+              {/* Taxable subtotal */}
+              {taxableSubtotal > 0 && (
+                <tr>
+                  <td className="border border-black px-2 py-1 bg-gray-50">課税対象小計</td>
+                  <td className="border border-black px-2 py-1 text-right">{formatNumber(taxableSubtotal)}</td>
+                </tr>
+              )}
+              {/* Non-taxable subtotal */}
+              {nonTaxableSubtotal > 0 && (
+                <tr>
+                  <td className="border border-black px-2 py-1 bg-gray-50">非課税対象小計</td>
+                  <td className="border border-black px-2 py-1 text-right">{formatNumber(nonTaxableSubtotal)}</td>
+                </tr>
+              )}
+              {/* Tax amount */}
+              <tr>
+                <td className="border border-black px-2 py-1 bg-gray-50">消費税（10%）</td>
+                <td className="border border-black px-2 py-1 text-right">{formatNumber(taxAmount)}</td>
+              </tr>
+              {/* Total */}
+              <tr className="font-bold">
+                <td className="border border-black px-2 py-1 bg-gray-100">合計金額</td>
+                <td className="border border-black px-2 py-1 text-right bg-gray-100">{formatNumber(document.total)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {/* Due Date (for invoices) */}
         {document.type === 'invoice' && 'dueDate' in document && (
@@ -264,7 +307,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
           </div>
         )}
 
-        {/* Additional Notes (excluding first line which is used as subject) */}
+        {/* Additional Notes */}
         {document.notes && document.notes.split('\n').length > 1 && (
           <div className="text-xs mt-4 border-t border-gray-300 pt-2">
             <p className="font-semibold mb-1">備考</p>

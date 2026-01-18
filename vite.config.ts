@@ -4,5 +4,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/order/',
+  // Use '/' for Firebase Hosting, '/order/' for GitHub Pages
+  base: process.env.DEPLOY_TARGET === 'github-pages' ? '/order/' : '/',
 })

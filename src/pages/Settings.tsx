@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button, Input, Select } from '../components/common';
 import { ItemSetEditor } from '../components/settings';
 import {
@@ -50,6 +51,105 @@ const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdA
       {stamp.showDate && (
         <span style={{ fontSize: `${stamp.size / 5}px` }}>{dateStr}</span>
       )}
+    </div>
+  );
+};
+
+// Password Settings Section Component
+const PasswordSettingsSection = () => {
+  const { changePassword, logout } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+
+    if (!currentPassword) {
+      setMessage({ type: 'error', text: '現在のパスワードを入力してください' });
+      return;
+    }
+
+    if (!newPassword) {
+      setMessage({ type: 'error', text: '新しいパスワードを入力してください' });
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setMessage({ type: 'error', text: 'パスワードは4文字以上で設定してください' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: '新しいパスワードが一致しません' });
+      return;
+    }
+
+    const success = changePassword(currentPassword, newPassword);
+    if (success) {
+      setMessage({ type: 'success', text: 'パスワードを変更しました' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setMessage({ type: 'error', text: '現在のパスワードが正しくありません' });
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">パスワード設定</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">ログインパスワードを変更します</p>
+
+      <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+        <Input
+          type="password"
+          label="現在のパスワード"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          placeholder="現在のパスワードを入力"
+        />
+        <Input
+          type="password"
+          label="新しいパスワード"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="新しいパスワードを入力"
+          helperText="4文字以上で設定してください"
+        />
+        <Input
+          type="password"
+          label="新しいパスワード（確認）"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="新しいパスワードを再入力"
+        />
+
+        {message && (
+          <div className={`p-3 rounded-lg ${
+            message.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+          }`}>
+            <p className="text-sm">{message.text}</p>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <Button type="submit">パスワードを変更</Button>
+        </div>
+      </form>
+
+      <div className="mt-6 pt-4 border-t dark:border-gray-600">
+        <Button variant="secondary" onClick={logout}>
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          ログアウト
+        </Button>
+      </div>
     </div>
   );
 };
@@ -1092,6 +1192,9 @@ export function Settings() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
         <ItemSetEditor />
       </div>
+
+      {/* Password Settings */}
+      <PasswordSettingsSection />
 
       {/* Auto Backup */}
       <AutoBackupSection />

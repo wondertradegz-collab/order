@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button, Input, Select } from '../components/common';
+import { ItemSetEditor } from '../components/settings';
 import type { CompanyInfo, ElectronicStamp, DocumentTemplate } from '../types';
 
 // Stamp Preview Component
@@ -730,6 +731,11 @@ export function Settings() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Item Sets Management */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
+        <ItemSetEditor />
       </div>
 
       {/* Data Management */}

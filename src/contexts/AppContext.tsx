@@ -14,6 +14,7 @@ import type {
   PaymentRecord,
   ElectronicStamp,
   DocumentTemplate,
+  ItemSet,
 } from '../types';
 
 // デフォルト設定
@@ -96,6 +97,12 @@ interface AppContextType {
   deleteTemplate: (id: string) => void;
   getTemplatesByType: (type: DocumentType) => DocumentTemplate[];
 
+  // 作業セット（明細セット）
+  itemSets: ItemSet[];
+  addItemSet: (itemSet: Omit<ItemSet, 'id' | 'createdAt' | 'updatedAt'>) => ItemSet;
+  updateItemSet: (id: string, itemSet: Partial<ItemSet>) => void;
+  deleteItemSet: (id: string) => void;
+
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
@@ -110,6 +117,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [paymentRecords, setPaymentRecords] = useLocalStorage<PaymentRecord[]>('invoice-app-payments', []);
   const [settings, setSettings] = useLocalStorage<AppSettings>('invoice-app-settings', defaultSettings);
   const [templates, setTemplates] = useLocalStorage<DocumentTemplate[]>('invoice-app-templates', []);
+  const [itemSets, setItemSets] = useLocalStorage<ItemSet[]>('invoice-app-itemsets', []);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -457,6 +465,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return templates.filter((t) => t.type === type);
   }, [templates]);
 
+  // 作業セット操作
+  const addItemSet = useCallback((itemSet: Omit<ItemSet, 'id' | 'createdAt' | 'updatedAt'>): ItemSet => {
+    const now = new Date().toISOString();
+    const newItemSet: ItemSet = {
+      ...itemSet,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setItemSets((prev) => [...prev, newItemSet]);
+    return newItemSet;
+  }, [setItemSets]);
+
+  const updateItemSet = useCallback((id: string, itemSet: Partial<ItemSet>) => {
+    setItemSets((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, ...itemSet, updatedAt: new Date().toISOString() } : s
+      )
+    );
+  }, [setItemSets]);
+
+  const deleteItemSet = useCallback((id: string) => {
+    setItemSets((prev) => prev.filter((s) => s.id !== id));
+  }, [setItemSets]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -491,6 +524,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateTemplate,
     deleteTemplate,
     getTemplatesByType,
+    itemSets,
+    addItemSet,
+    updateItemSet,
+    deleteItemSet,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -527,6 +564,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateTemplate,
     deleteTemplate,
     getTemplatesByType,
+    itemSets,
+    addItemSet,
+    updateItemSet,
+    deleteItemSet,
     generateDocumentNumber,
     calculateTotals,
   ]);

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../common';
+import { useApp } from '../../contexts/AppContext';
 import { formatCurrency } from '../../utils/format';
-import type { LineItem, Product } from '../../types';
+import type { LineItem, Product, ItemSet, Customer } from '../../types';
 
 interface LineItemEditorProps {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
   defaultTaxRate: number;
   products?: Product[];
+  customer?: Customer; // 顧客（為替レート・通貨のデフォルト値用）
 }
 
 const CURRENCY_OPTIONS = [
@@ -20,8 +22,10 @@ const CURRENCY_OPTIONS = [
   { code: 'TWD', symbol: 'NT$', name: '台湾ドル' },
 ];
 
-export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] }: LineItemEditorProps) {
+export function LineItemEditor({ items, onChange, defaultTaxRate, products = [], customer }: LineItemEditorProps) {
+  const { itemSets } = useApp();
   const [showProductSelector, setShowProductSelector] = useState<string | null>(null);
+  const [showItemSetSelector, setShowItemSetSelector] = useState(false);
   const [foreignCurrencyMode, setForeignCurrencyMode] = useState<Set<string>>(new Set());
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -79,6 +83,9 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
 
   const addForeignCurrencyItem = () => {
     const newId = uuidv4();
+    // 顧客のデフォルト為替レート・通貨を使用
+    const defaultCurrency = customer?.defaultCurrency || 'CNY';
+    const defaultExchangeRate = customer?.defaultExchangeRate || 0;
     onChange([
       ...items,
       {
@@ -88,11 +95,26 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
         unitPrice: 0,
         taxRate: defaultTaxRate,
         foreignAmount: 0,
-        exchangeRate: 0,
-        foreignCurrency: 'CNY',
+        exchangeRate: defaultExchangeRate,
+        foreignCurrency: defaultCurrency,
       },
     ]);
     setForeignCurrencyMode(new Set([...foreignCurrencyMode, newId]));
+  };
+
+  // 作業セットから明細を追加
+  const addFromItemSet = (itemSet: ItemSet) => {
+    const newItems = itemSet.items.map((setItem) => ({
+      id: uuidv4(),
+      description: setItem.description,
+      quantity: setItem.quantity,
+      unit: setItem.unit,
+      unitPrice: setItem.unitPrice,
+      taxRate: setItem.taxRate,
+      taxCategory: setItem.taxCategory,
+    }));
+    onChange([...items, ...newItems]);
+    setShowItemSetSelector(false);
   };
 
   const addFromProduct = (product: Product) => {
@@ -123,6 +145,9 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
           const exchangeRate = field === 'exchangeRate' ? (value as number) : (item.exchangeRate || 0);
           if (foreignAmount > 0 && exchangeRate > 0) {
             updatedItem.unitPrice = Math.round(foreignAmount * exchangeRate);
+            // 自動計算備考を生成（例：「(369.94元×22.23円)」）
+            const currencySymbol = getCurrencySymbol(item.foreignCurrency);
+            updatedItem.calculationNote = `(${foreignAmount}${currencySymbol}×${exchangeRate}円)`;
           }
         }
 
@@ -514,6 +539,48 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
           </svg>
           外貨立替を追加
         </button>
+        {/* 作業セット呼び出しボタン */}
+        {itemSets.length > 0 && (
+          <div className="relative flex-1">
+            <button
+              type="button"
+              onClick={() => setShowItemSetSelector(!showItemSetSelector)}
+              className="w-full py-3 border-2 border-dashed border-orange-300 rounded-lg text-orange-600 hover:border-orange-400 hover:bg-orange-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              セット呼び出し
+            </button>
+            {showItemSetSelector && (
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto">
+                <div className="p-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 sticky top-0">
+                  セットを選択すると複数の明細がまとめて追加されます
+                </div>
+                {itemSets.map((itemSet) => (
+                  <button
+                    key={itemSet.id}
+                    type="button"
+                    onClick={() => addFromItemSet(itemSet)}
+                    className="w-full px-4 py-3 text-left hover:bg-orange-50 dark:hover:bg-orange-900/20 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{itemSet.name}</p>
+                        {itemSet.description && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{itemSet.description}</p>
+                        )}
+                        <p className="text-xs text-orange-600 mt-1">
+                          {itemSet.items.length}項目: {itemSet.items.map((i) => i.description).join('、')}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {products.length > 0 && (
           <div className="relative flex-1">
             <button
@@ -527,22 +594,22 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
               商品から追加
             </button>
             {showProductSelector && (
-              <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
+              <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto">
                 {products.map((product) => (
                   <button
                     key={product.id}
                     type="button"
                     onClick={() => addFromProduct(product)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0"
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-medium text-gray-900">{product.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
                         {product.description && (
-                          <p className="text-sm text-gray-500">{product.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{product.description}</p>
                         )}
                       </div>
-                      <span className="text-sm font-medium text-gray-900 ml-4">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white ml-4">
                         {formatCurrency(product.unitPrice)}
                       </span>
                     </div>

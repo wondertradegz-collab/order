@@ -4,6 +4,15 @@ export type DocumentType = 'quotation' | 'invoice' | 'receipt';
 // 書類のステータス
 export type DocumentStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
+// 端数処理方法
+export type RoundingMethod = 'round' | 'floor' | 'ceil';
+
+export const ROUNDING_METHOD_LABELS: Record<RoundingMethod, string> = {
+  round: '四捨五入',
+  floor: '切り捨て',
+  ceil: '切り上げ',
+};
+
 // 顧客
 export interface Customer {
   id: string;
@@ -13,6 +22,12 @@ export interface Customer {
   phone?: string;
   postalCode?: string;
   address?: string;
+  // 外貨換算設定
+  defaultExchangeRate?: number; // デフォルト為替レート（例：22.23円/元）
+  defaultCurrency?: string; // デフォルト通貨（例：CNY）
+  // 端数処理設定
+  roundingMethod?: RoundingMethod; // 端数処理方法
+  roundingUnit?: number; // 端数処理の単位（1=1円単位、10=10円単位など）
   createdAt: string;
   updatedAt: string;
 }
@@ -25,10 +40,13 @@ export interface LineItem {
   unit?: string; // 単位（個、式、時間など）
   unitPrice: number;
   taxRate: number; // 消費税率 (10 = 10%)
+  taxCategory?: TaxCategory; // 税区分（課税/非課税/不課税）
   // 外貨計算用（例：中国元での立替を円に換算）
   foreignAmount?: number; // 外貨金額
   exchangeRate?: number; // 為替レート（例：23.08円/元）
   foreignCurrency?: string; // 通貨コード（例：CNY, USD）
+  // 自動計算備考（例：「(369.94元×22.23円)」）
+  calculationNote?: string;
 }
 
 // 商品マスタ
@@ -137,6 +155,35 @@ export interface DocumentTemplate {
   createdAt: string;
   updatedAt: string;
 }
+
+// 作業セット（明細セット）- 複数の作業項目をまとめて追加できる
+export interface ItemSetItem {
+  description: string;
+  quantity: number;
+  unit?: string;
+  unitPrice: number;
+  taxRate: number;
+  // 税区分
+  taxCategory?: TaxCategory;
+}
+
+export interface ItemSet {
+  id: string;
+  name: string; // セット名（例：「検品・入替セット」）
+  description?: string;
+  items: ItemSetItem[]; // セットに含まれる作業項目
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 税区分（課税/非課税/不課税）
+export type TaxCategory = 'taxable' | 'exempt' | 'non_taxable';
+
+export const TAX_CATEGORY_LABELS: Record<TaxCategory, string> = {
+  taxable: '課税',
+  exempt: '非課税',
+  non_taxable: '不課税',
+};
 
 // アプリの設定
 export interface AppSettings {

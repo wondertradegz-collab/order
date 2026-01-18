@@ -57,7 +57,7 @@ export function SettingsDropdown({ onOpenManual }: SettingsDropdownProps) {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+        <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
           {/* Language Section */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2 mb-3">

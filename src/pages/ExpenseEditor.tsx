@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useApp } from '../contexts/AppContext';
 import { formatCurrency, getTodayString } from '../utils/format';
-import { Card, Button, Input, Select } from '../components/common';
+import { Card, Button, Input, Select, DateInput } from '../components/common';
 import { getCachedExchangeRate, getHistoricalExchangeRate, getMonthlyAverageRate } from '../utils/exchangeRate';
 import type { ExpenseItem, ExpenseCategory, ExpenseReportStatus } from '../types';
 import { EXPENSE_CATEGORY_LABELS } from '../types';
@@ -246,13 +246,13 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
           {/* Historical Rate Fetch */}
           <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">過去の日付で為替レートを取得</p>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={rateFetchDate === 'latest' ? getTodayString() : rateFetchDate}
-                onChange={(e) => setRateFetchDate(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-              />
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[200px]">
+                <DateInput
+                  value={rateFetchDate === 'latest' ? getTodayString() : rateFetchDate}
+                  onChange={(value) => setRateFetchDate(value || 'latest')}
+                />
+              </div>
               <Button
                 variant="secondary"
                 size="sm"
@@ -296,10 +296,10 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
           <div className="space-y-4">
             {/* Header Row */}
             <div className="hidden md:grid md:grid-cols-12 gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 px-2">
-              <div className="col-span-2">日付</div>
+              <div className="col-span-3">日付</div>
               <div className="col-span-2">金額(RMB)</div>
               <div className="col-span-2">カテゴリ</div>
-              <div className="col-span-3">説明</div>
+              <div className="col-span-2">説明</div>
               <div className="col-span-2">スクショ</div>
               <div className="col-span-1"></div>
             </div>
@@ -310,13 +310,11 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 key={expense.id}
                 className="grid grid-cols-1 md:grid-cols-12 gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
               >
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">日付</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={expense.date}
-                    onChange={(e) => updateExpense(expense.id, { date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    onChange={(value) => updateExpense(expense.id, { date: value })}
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -347,7 +345,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                     ))}
                   </select>
                 </div>
-                <div className="md:col-span-3">
+                <div className="md:col-span-2">
                   <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">説明</label>
                   <input
                     type="text"

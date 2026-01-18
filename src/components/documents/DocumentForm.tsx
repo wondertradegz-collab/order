@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Input, Textarea, Select, Button } from '../common';
+import { Textarea, Select, Button, DateInput } from '../common';
 import { LineItemEditor, TotalsSummary } from './LineItemEditor';
 import { getTodayString } from '../../utils/format';
 import type { Document, LineItem, Customer, DocumentType, Product } from '../../types';
@@ -155,26 +155,23 @@ export function DocumentForm({
             value={status}
             onChange={(val) => setStatus(val as any)}
           />
-          <Input
+          <DateInput
             label="発行日"
-            type="date"
             value={issueDate}
-            onChange={(e) => setIssueDate(e.target.value)}
+            onChange={(value) => setIssueDate(value)}
           />
           {type === 'quotation' && (
-            <Input
+            <DateInput
               label="有効期限"
-              type="date"
               value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
+              onChange={(value) => setValidUntil(value)}
             />
           )}
           {type === 'invoice' && (
-            <Input
+            <DateInput
               label="支払期限"
-              type="date"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={(value) => setDueDate(value)}
             />
           )}
           {type === 'receipt' && (

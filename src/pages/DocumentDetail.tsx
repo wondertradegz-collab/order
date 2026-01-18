@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 import { useApp } from '../contexts/AppContext';
-import { Button, Modal, Input, Select, ConfirmModal } from '../components/common';
+import { Button, Modal, Input, Select, ConfirmModal, DateInput } from '../components/common';
 import { DocumentPreview } from '../components/documents/DocumentPreview';
 import {
   formatCurrency,
@@ -526,11 +526,10 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
             onChange={(e) => setPaymentAmount(e.target.value)}
             placeholder="0"
           />
-          <Input
+          <DateInput
             label="入金日"
-            type="date"
             value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
+            onChange={(value) => setPaymentDate(value)}
           />
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
@@ -550,11 +549,10 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       >
         <div className="space-y-4">
           {type === 'quotation' && (
-            <Input
+            <DateInput
               label="支払期限"
-              type="date"
               value={convertDueDate}
-              onChange={(e) => setConvertDueDate(e.target.value)}
+              onChange={(value) => setConvertDueDate(value)}
             />
           )}
           {type === 'invoice' && (

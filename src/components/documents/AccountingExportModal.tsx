@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Button, Badge } from '../common';
+import { Modal, Button, Badge, DateInput } from '../common';
 import { useApp } from '../../contexts/AppContext';
 import {
   exportToAccountingSoftware,
@@ -114,20 +114,22 @@ export function AccountingExportModal({ isOpen, onClose }: AccountingExportModal
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             対象期間
           </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <DateInput
+                value={dateFrom}
+                onChange={(value) => setDateFrom(value)}
+                placeholder="開始日"
+              />
+            </div>
             <span className="text-gray-400">〜</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex-1 min-w-[180px]">
+              <DateInput
+                value={dateTo}
+                onChange={(value) => setDateTo(value)}
+                placeholder="終了日"
+              />
+            </div>
           </div>
         </div>
 

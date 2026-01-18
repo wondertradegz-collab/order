@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { Button, Input, Select, ConfirmModal, ChipGroup, Badge, Card, EmptyState } from '../components/common';
+import { Button, Input, Select, ConfirmModal, ChipGroup, Badge, Card, EmptyState, DateInput } from '../components/common';
 import { AccountingExportModal } from '../components/documents';
 import {
   formatCurrency,
@@ -184,22 +184,22 @@ export function DocumentList({ type }: DocumentListProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              placeholder="開始日"
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="flex items-center text-gray-400">〜</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              placeholder="終了日"
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex-1 min-w-[180px]">
+              <DateInput
+                value={dateFrom}
+                onChange={(value) => setDateFrom(value)}
+                placeholder="開始日"
+              />
+            </div>
+            <span className="text-gray-400">〜</span>
+            <div className="flex-1 min-w-[180px]">
+              <DateInput
+                value={dateTo}
+                onChange={(value) => setDateTo(value)}
+                placeholder="終了日"
+              />
+            </div>
           </div>
           <Select
             options={sortOptions}

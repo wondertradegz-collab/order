@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatCurrency, formatDate } from '../utils/format';
-import { Button, Select, Input } from '../components/common';
+import { Button, Select, Input, DateInput } from '../components/common';
 import type { Invoice, Receipt } from '../types';
 
 type TabType = 'overview' | 'aging' | 'cashflow' | 'products' | 'goals';
@@ -314,22 +314,18 @@ export function Reports() {
               </div>
               {period === 'custom' && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">開始日</label>
-                    <input
-                      type="date"
+                  <div className="min-w-[200px]">
+                    <DateInput
+                      label="開始日"
                       value={customStart}
-                      onChange={(e) => setCustomStart(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      onChange={(value) => setCustomStart(value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">終了日</label>
-                    <input
-                      type="date"
+                  <div className="min-w-[200px]">
+                    <DateInput
+                      label="終了日"
                       value={customEnd}
-                      onChange={(e) => setCustomEnd(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                      onChange={(value) => setCustomEnd(value)}
                     />
                   </div>
                 </>

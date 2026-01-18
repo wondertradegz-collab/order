@@ -267,3 +267,30 @@ export const EXPENSE_REPORT_STATUS_LABELS: Record<ExpenseReportStatus, string> =
   completed: '確定',
   invoiced: '請求済み',
 };
+
+// メモ・タスクの優先度
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
+  low: '低',
+  medium: '中',
+  high: '高',
+};
+
+// メモ・タスク
+export interface Memo {
+  id: string;
+  title: string;
+  content?: string;
+  isTask: boolean; // タスクかどうか
+  completed: boolean; // タスクの場合、完了したかどうか
+  dueDate?: string; // 期限（タスクの場合）
+  priority: TaskPriority;
+  // 関連付け
+  customerId?: string; // 関連する顧客
+  documentId?: string; // 関連する書類
+  documentType?: DocumentType; // 関連する書類の種類
+  // メタデータ
+  createdAt: string;
+  updatedAt: string;
+}

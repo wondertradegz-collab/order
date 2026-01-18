@@ -25,6 +25,7 @@ export function Layout({ children }: LayoutProps) {
     { path: '/invoices', label: t('nav.invoices'), icon: InvoiceIcon },
     { path: '/receipts', label: t('nav.receipts'), icon: ReceiptIcon },
     { path: '/expenses', label: t('nav.expenses'), icon: ExpensesIcon },
+    { path: '/memos', label: t('nav.memos'), icon: MemosIcon },
     { path: '/customers', label: t('nav.customers'), icon: CustomersIcon },
     { path: '/products', label: t('nav.products'), icon: ProductsIcon },
     { path: '/reports', label: t('nav.reports'), icon: ReportsIcon },
@@ -240,6 +241,14 @@ function ExpensesIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  );
+}
+
+function MemosIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
     </svg>
   );
 }

@@ -10,3 +10,4 @@ export { Reports } from './Reports';
 export { Expenses } from './Expenses';
 export { ExpenseEditor } from './ExpenseEditor';
 export { ExpenseDetail } from './ExpenseDetail';
+export { Memos } from './Memos';

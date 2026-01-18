@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Card, CardHeader, Badge, ChipGroup, Carousel, EmptyState } from '../components/common';
 import type { Invoice } from '../types';
 
 export function Dashboard() {
-  const { documents, customers } = useApp();
+  const { documents, customers, memos, toggleMemoComplete } = useApp();
+  const { t } = useLanguage();
   const [quickFilter, setQuickFilter] = useState<string>('all');
 
   const stats = useMemo(() => {
@@ -91,9 +93,48 @@ export function Dashboard() {
       .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
   }, [documents]);
 
+  // Incomplete tasks sorted by priority and due date
+  const incompleteTasks = useMemo(() => {
+    return memos
+      .filter((m) => m.isTask && !m.completed)
+      .sort((a, b) => {
+        // Priority order: high > medium > low
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+
+        // Then by due date
+        if (a.dueDate && b.dueDate) {
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+
+        return 0;
+      })
+      .slice(0, 5);
+  }, [memos]);
+
   const getCustomerName = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     return customer?.companyName || customer?.name || '不明';
+  };
+
+  const isTaskOverdue = (dueDate: string) => {
+    return new Date(dueDate) < new Date(new Date().toDateString());
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'red';
+      case 'medium':
+        return 'yellow';
+      case 'low':
+        return 'green';
+      default:
+        return 'gray';
+    }
   };
 
   const tips = [
@@ -335,6 +376,53 @@ export function Dashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Tasks Widget */}
+      {incompleteTasks.length > 0 && (
+        <Card>
+          <CardHeader
+            title={t('memos.incompleteTasks')}
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            }
+            action={
+              <Link to="/memos" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700">
+                {t('common.all')} →
+              </Link>
+            }
+          />
+          <div className="space-y-2">
+            {incompleteTasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <button
+                  onClick={() => toggleMemoComplete(task.id)}
+                  className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 flex items-center justify-center transition-colors flex-shrink-0"
+                >
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
+                    <Badge color={getPriorityColor(task.priority) as any} dot>
+                      {t(`memos.priority${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}`)}
+                    </Badge>
+                  </div>
+                  {task.dueDate && (
+                    <p className={`text-sm ${isTaskOverdue(task.dueDate) ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {t('memos.dueDate')}: {formatDate(task.dueDate)}
+                      {isTaskOverdue(task.dueDate) && ` (${t('status.overdue')})`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -16,6 +16,7 @@ import type {
   DocumentTemplate,
   ItemSet,
   ExpenseReport,
+  Memo,
 } from '../types';
 
 // デフォルト設定
@@ -112,6 +113,17 @@ interface AppContextType {
   getExpenseReport: (id: string) => ExpenseReport | undefined;
   addExpenseToInvoice: (reportId: string, invoiceId: string, description: string) => LineItem | null;
 
+  // メモ・タスク
+  memos: Memo[];
+  addMemo: (memo: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>) => Memo;
+  updateMemo: (id: string, memo: Partial<Memo>) => void;
+  deleteMemo: (id: string) => void;
+  getMemo: (id: string) => Memo | undefined;
+  toggleMemoComplete: (id: string) => void;
+  getMemosByCustomer: (customerId: string) => Memo[];
+  getMemosByDocument: (documentId: string) => Memo[];
+  getIncompleteTasks: () => Memo[];
+
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
@@ -128,6 +140,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [templates, setTemplates] = useLocalStorage<DocumentTemplate[]>('invoice-app-templates', []);
   const [itemSets, setItemSets] = useLocalStorage<ItemSet[]>('invoice-app-itemsets', []);
   const [expenseReports, setExpenseReports] = useLocalStorage<ExpenseReport[]>('invoice-app-expense-reports', []);
+  const [memos, setMemos] = useLocalStorage<Memo[]>('invoice-app-memos', []);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -577,6 +590,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return newLineItem;
   }, [expenseReports, setDocuments, setExpenseReports, calculateTotals]);
 
+  // メモ・タスク操作
+  const addMemo = useCallback((memo: Omit<Memo, 'id' | 'createdAt' | 'updatedAt'>): Memo => {
+    const now = new Date().toISOString();
+    const newMemo: Memo = {
+      ...memo,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setMemos((prev) => [...prev, newMemo]);
+    return newMemo;
+  }, [setMemos]);
+
+  const updateMemo = useCallback((id: string, memo: Partial<Memo>) => {
+    setMemos((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, ...memo, updatedAt: new Date().toISOString() } : m
+      )
+    );
+  }, [setMemos]);
+
+  const deleteMemo = useCallback((id: string) => {
+    setMemos((prev) => prev.filter((m) => m.id !== id));
+  }, [setMemos]);
+
+  const getMemo = useCallback((id: string) => {
+    return memos.find((m) => m.id === id);
+  }, [memos]);
+
+  const toggleMemoComplete = useCallback((id: string) => {
+    setMemos((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, completed: !m.completed, updatedAt: new Date().toISOString() } : m
+      )
+    );
+  }, [setMemos]);
+
+  const getMemosByCustomer = useCallback((customerId: string) => {
+    return memos.filter((m) => m.customerId === customerId);
+  }, [memos]);
+
+  const getMemosByDocument = useCallback((documentId: string) => {
+    return memos.filter((m) => m.documentId === documentId);
+  }, [memos]);
+
+  const getIncompleteTasks = useCallback(() => {
+    return memos.filter((m) => m.isTask && !m.completed);
+  }, [memos]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -621,6 +683,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteExpenseReport,
     getExpenseReport,
     addExpenseToInvoice,
+    memos,
+    addMemo,
+    updateMemo,
+    deleteMemo,
+    getMemo,
+    toggleMemoComplete,
+    getMemosByCustomer,
+    getMemosByDocument,
+    getIncompleteTasks,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -667,6 +738,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteExpenseReport,
     getExpenseReport,
     addExpenseToInvoice,
+    memos,
+    addMemo,
+    updateMemo,
+    deleteMemo,
+    getMemo,
+    toggleMemoComplete,
+    getMemosByCustomer,
+    getMemosByDocument,
+    getIncompleteTasks,
     generateDocumentNumber,
     calculateTotals,
   ]);

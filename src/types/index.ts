@@ -22,8 +22,32 @@ export interface LineItem {
   id: string;
   description: string;
   quantity: number;
+  unit?: string; // 単位（個、式、時間など）
   unitPrice: number;
   taxRate: number; // 消費税率 (10 = 10%)
+}
+
+// 商品マスタ
+export interface Product {
+  id: string;
+  name: string;
+  description?: string;
+  unit?: string;
+  unitPrice: number;
+  taxRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 入金履歴
+export interface PaymentRecord {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  paidDate: string;
+  method?: string; // 支払方法
+  note?: string;
+  createdAt: string;
 }
 
 // 書類の基本情報
@@ -63,6 +87,7 @@ export interface Invoice extends BaseDocument {
 export interface Receipt extends BaseDocument {
   type: 'receipt';
   paymentMethod?: string; // 支払方法
+  proviso?: string; // 但し書き（例：お品代として）
   invoiceId?: string; // 元の請求書ID
 }
 

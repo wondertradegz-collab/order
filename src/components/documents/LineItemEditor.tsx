@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../common';
 import { formatCurrency } from '../../utils/format';
-import type { LineItem } from '../../types';
+import type { LineItem, Product } from '../../types';
 
 interface LineItemEditorProps {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
   defaultTaxRate: number;
+  products?: Product[];
 }
 
-export function LineItemEditor({ items, onChange, defaultTaxRate }: LineItemEditorProps) {
+export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] }: LineItemEditorProps) {
+  const [showProductSelector, setShowProductSelector] = useState<string | null>(null);
+
   const addItem = () => {
     onChange([
       ...items,
@@ -21,6 +25,21 @@ export function LineItemEditor({ items, onChange, defaultTaxRate }: LineItemEdit
         taxRate: defaultTaxRate,
       },
     ]);
+  };
+
+  const addFromProduct = (product: Product) => {
+    onChange([
+      ...items,
+      {
+        id: uuidv4(),
+        description: product.name + (product.description ? ` - ${product.description}` : ''),
+        quantity: 1,
+        unit: product.unit,
+        unitPrice: product.unitPrice,
+        taxRate: product.taxRate,
+      },
+    ]);
+    setShowProductSelector(null);
   };
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
@@ -178,17 +197,57 @@ export function LineItemEditor({ items, onChange, defaultTaxRate }: LineItemEdit
         ))}
       </div>
 
-      {/* Add Button */}
-      <button
-        type="button"
-        onClick={addItem}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        明細を追加
-      </button>
+      {/* Add Buttons */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          onClick={addItem}
+          className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          明細を追加
+        </button>
+        {products.length > 0 && (
+          <div className="relative flex-1">
+            <button
+              type="button"
+              onClick={() => setShowProductSelector(showProductSelector ? null : 'open')}
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              商品から追加
+            </button>
+            {showProductSelector && (
+              <div className="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
+                {products.map((product) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => addFromProduct(product)}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        {product.description && (
+                          <p className="text-sm text-gray-500">{product.description}</p>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 ml-4">
+                        {formatCurrency(product.unitPrice)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

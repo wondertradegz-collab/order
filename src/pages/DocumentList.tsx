@@ -15,12 +15,19 @@ interface DocumentListProps {
   type: DocumentType;
 }
 
+type SortOption = 'newest' | 'oldest' | 'amount_high' | 'amount_low';
+
 export function DocumentList({ type }: DocumentListProps) {
   const navigate = useNavigate();
-  const { documents, customers, deleteDocument } = useApp();
+  const { documents, customers, deleteDocument, deleteDocuments } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const typeLabel = getDocumentTypeLabel(type);
   const basePath = `/${type}s`;
@@ -44,10 +51,29 @@ export function DocumentList({ type }: DocumentListProps) {
       docs = docs.filter((d) => d.status === statusFilter);
     }
 
-    return docs.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [documents, type, searchQuery, statusFilter, customers]);
+    if (dateFrom) {
+      docs = docs.filter((d) => d.issueDate >= dateFrom);
+    }
+
+    if (dateTo) {
+      docs = docs.filter((d) => d.issueDate <= dateTo);
+    }
+
+    // Sort
+    return docs.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'amount_high':
+          return b.total - a.total;
+        case 'amount_low':
+          return a.total - b.total;
+        case 'newest':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [documents, type, searchQuery, statusFilter, dateFrom, dateTo, sortBy, customers]);
 
   const getCustomerName = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
@@ -61,6 +87,30 @@ export function DocumentList({ type }: DocumentListProps) {
     }
   };
 
+  const handleBulkDelete = () => {
+    deleteDocuments(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setShowBulkDeleteConfirm(false);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredDocuments.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDocuments.map((d) => d.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
   const statusOptions = [
     { value: 'all', label: 'すべて' },
     { value: 'draft', label: '下書き' },
@@ -72,6 +122,13 @@ export function DocumentList({ type }: DocumentListProps) {
         ]
       : []),
     { value: 'cancelled', label: 'キャンセル' },
+  ];
+
+  const sortOptions = [
+    { value: 'newest', label: '新しい順' },
+    { value: 'oldest', label: '古い順' },
+    { value: 'amount_high', label: '金額: 高い順' },
+    { value: 'amount_low', label: '金額: 低い順' },
   ];
 
   return (
@@ -91,22 +148,60 @@ export function DocumentList({ type }: DocumentListProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 max-w-md">
-          <Input
-            placeholder="番号、顧客名で検索..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="w-full sm:w-48">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="lg:col-span-2">
+            <Input
+              placeholder="番号、顧客名で検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <Select
             options={statusOptions}
             value={statusFilter}
             onChange={setStatusFilter}
           />
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              placeholder="開始日"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="flex items-center text-gray-400">〜</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              placeholder="終了日"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <Select
+            options={sortOptions}
+            value={sortBy}
+            onChange={(val) => setSortBy(val as SortOption)}
+          />
         </div>
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-blue-700">
+            {selectedIds.size}件選択中
+          </span>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setShowBulkDeleteConfirm(true)}
+          >
+            一括削除
+          </Button>
+        </div>
+      )}
 
       {/* Document List */}
       {filteredDocuments.length === 0 ? (
@@ -125,7 +220,15 @@ export function DocumentList({ type }: DocumentListProps) {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === filteredDocuments.length && filteredDocuments.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     番号
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -152,8 +255,16 @@ export function DocumentList({ type }: DocumentListProps) {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredDocuments.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                  <tr key={doc.id} className={`hover:bg-gray-50 ${selectedIds.has(doc.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(doc.id)}
+                        onChange={() => toggleSelect(doc.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
                       <Link
                         to={`${basePath}/${doc.id}`}
                         className="font-medium text-blue-600 hover:text-blue-700"
@@ -258,6 +369,17 @@ export function DocumentList({ type }: DocumentListProps) {
         title={`${typeLabel}を削除`}
         message={`「${deleteTarget?.documentNumber}」を削除しますか？この操作は取り消せません。`}
         confirmText="削除"
+        variant="danger"
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmModal
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title={`${typeLabel}を一括削除`}
+        message={`選択した${selectedIds.size}件の${typeLabel}を削除しますか？この操作は取り消せません。`}
+        confirmText="一括削除"
         variant="danger"
       />
     </div>

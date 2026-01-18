@@ -8,6 +8,8 @@ import {
   DocumentDetail,
   DocumentEditor,
   Settings,
+  Products,
+  Reports,
 } from './pages';
 
 function App() {
@@ -39,6 +41,12 @@ function App() {
             <Route path="/receipts/new" element={<DocumentEditor type="receipt" mode="create" />} />
             <Route path="/receipts/:id" element={<DocumentDetail type="receipt" />} />
             <Route path="/receipts/:id/edit" element={<DocumentEditor type="receipt" mode="edit" />} />
+
+            {/* Products */}
+            <Route path="/products" element={<Products />} />
+
+            {/* Reports */}
+            <Route path="/reports" element={<Reports />} />
 
             {/* Settings */}
             <Route path="/settings" element={<Settings />} />

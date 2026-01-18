@@ -1,0 +1,324 @@
+import { useState, useMemo } from 'react';
+import { useApp } from '../contexts/AppContext';
+import { Button, Input, Modal, ConfirmModal, Select } from '../components/common';
+import { formatCurrency } from '../utils/format';
+import type { Product } from '../types';
+
+export function Products() {
+  const { products, addProduct, updateProduct, deleteProduct, settings } = useApp();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    const query = searchQuery.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query)
+    );
+  }, [products, searchQuery]);
+
+  const handleOpenModal = (product?: Product) => {
+    setEditingProduct(product || null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleSave = (data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingProduct) {
+      updateProduct(editingProduct.id, data);
+    } else {
+      addProduct(data);
+    }
+    handleCloseModal();
+  };
+
+  const handleDelete = () => {
+    if (deleteTarget) {
+      deleteProduct(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">商品マスタ</h1>
+          <p className="text-gray-500 mt-1">よく使う商品・サービスを登録しておくと、書類作成時に選択できます</p>
+        </div>
+        <Button onClick={() => handleOpenModal()}>
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          商品を追加
+        </Button>
+      </div>
+
+      {/* Search */}
+      <div className="max-w-md">
+        <Input
+          placeholder="商品名、説明で検索..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Product List */}
+      {filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">商品がありません</h3>
+          <p className="text-gray-500 mb-4">よく使う商品を登録しておきましょう</p>
+          <Button onClick={() => handleOpenModal()}>商品を追加</Button>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    商品名
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    単位
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    単価
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    税率
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        {product.description && (
+                          <p className="text-sm text-gray-500">{product.description}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {product.unit || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-gray-900">
+                      {formatCurrency(product.unitPrice)}
+                    </td>
+                    <td className="px-6 py-4 text-right text-gray-500">
+                      {product.taxRate}%
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenModal(product)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(product)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-gray-200">
+            {filteredProducts.map((product) => (
+              <div key={product.id} className="p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">{product.name}</p>
+                    {product.description && (
+                      <p className="text-sm text-gray-500">{product.description}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleOpenModal(product)}
+                      className="p-2 text-gray-400 hover:text-blue-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(product)}
+                      className="p-2 text-gray-400 hover:text-red-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-4 text-sm">
+                  <span className="text-gray-500">単位: {product.unit || '-'}</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(product.unitPrice)}</span>
+                  <span className="text-gray-500">{product.taxRate}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Product Form Modal */}
+      <ProductFormModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSave}
+        product={editingProduct}
+        defaultTaxRate={settings.defaultTaxRate}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="商品を削除"
+        message={`「${deleteTarget?.name}」を削除しますか？`}
+        confirmText="削除"
+        variant="danger"
+      />
+    </div>
+  );
+}
+
+interface ProductFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  product: Product | null;
+  defaultTaxRate: number;
+}
+
+function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: ProductFormModalProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    unit: '',
+    unitPrice: 0,
+    taxRate: defaultTaxRate,
+  });
+
+  // Reset form when modal opens
+  if (isOpen && product && formData.name !== product.name) {
+    setFormData({
+      name: product.name,
+      description: product.description || '',
+      unit: product.unit || '',
+      unitPrice: product.unitPrice,
+      taxRate: product.taxRate,
+    });
+  } else if (isOpen && !product && formData.name !== '') {
+    setFormData({
+      name: '',
+      description: '',
+      unit: '',
+      unitPrice: 0,
+      taxRate: defaultTaxRate,
+    });
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+    setFormData({
+      name: '',
+      description: '',
+      unit: '',
+      unitPrice: 0,
+      taxRate: defaultTaxRate,
+    });
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={product ? '商品を編集' : '商品を追加'}
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="商品名 *"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+          placeholder="コンサルティング費用"
+        />
+        <Input
+          label="説明"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="月額顧問料"
+        />
+        <div className="grid grid-cols-3 gap-4">
+          <Input
+            label="単位"
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            placeholder="式"
+          />
+          <Input
+            label="単価 *"
+            type="number"
+            value={formData.unitPrice}
+            onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+            required
+          />
+          <Select
+            label="税率"
+            options={[
+              { value: '10', label: '10%' },
+              { value: '8', label: '8%' },
+              { value: '0', label: '0%' },
+            ]}
+            value={formData.taxRate.toString()}
+            onChange={(val) => setFormData({ ...formData, taxRate: parseInt(val) })}
+          />
+        </div>
+        <div className="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button type="submit">
+            {product ? '更新' : '追加'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

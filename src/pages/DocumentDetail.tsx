@@ -29,6 +29,8 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
     convertToInvoice,
     convertToReceipt,
     recordPayment,
+    duplicateDocument,
+    getPaymentsByInvoice,
     settings,
   } = useApp();
 
@@ -146,6 +148,14 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
 
   const invoice = document.type === 'invoice' ? (document as Invoice) : null;
   const remainingAmount = invoice ? invoice.total - invoice.paidAmount : 0;
+  const paymentHistory = invoice ? getPaymentsByInvoice(invoice.id) : [];
+
+  const handleDuplicate = () => {
+    const duplicated = duplicateDocument(document.id);
+    if (duplicated) {
+      navigate(`${basePath}/${duplicated.id}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -203,6 +213,12 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               編集
             </Button>
           </Link>
+          <Button variant="secondary" onClick={handleDuplicate}>
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            複製
+          </Button>
         </div>
       </div>
 
@@ -240,6 +256,26 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                     <p className="font-medium text-orange-600">{formatCurrency(remainingAmount)}</p>
                   </div>
                 </div>
+
+                {/* Payment History */}
+                {paymentHistory.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">入金履歴</h3>
+                    <div className="space-y-2">
+                      {paymentHistory.map((payment) => (
+                        <div key={payment.id} className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2">
+                          <div>
+                            <span className="text-gray-600">{formatDate(payment.paidDate)}</span>
+                            {payment.method && (
+                              <span className="text-gray-400 ml-2">({payment.method})</span>
+                            )}
+                          </div>
+                          <span className="font-medium text-green-600">{formatCurrency(payment.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

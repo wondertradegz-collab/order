@@ -4,3 +4,5 @@ export { DocumentList } from './DocumentList';
 export { DocumentDetail } from './DocumentDetail';
 export { DocumentEditor } from './DocumentEditor';
 export { Settings } from './Settings';
+export { Products } from './Products';
+export { Reports } from './Reports';

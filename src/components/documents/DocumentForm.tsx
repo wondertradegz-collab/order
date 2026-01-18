@@ -3,11 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { Input, Textarea, Select, Button } from '../common';
 import { LineItemEditor, TotalsSummary } from './LineItemEditor';
 import { getTodayString } from '../../utils/format';
-import type { Document, LineItem, Customer, DocumentType } from '../../types';
+import type { Document, LineItem, Customer, DocumentType, Product } from '../../types';
 
 interface DocumentFormProps {
   type: DocumentType;
   customers: Customer[];
+  products: Product[];
   defaultTaxRate: number;
   initialData?: Partial<Document>;
   onSubmit: (data: Omit<Document, 'id' | 'documentNumber' | 'createdAt' | 'updatedAt'>) => void;
@@ -18,6 +19,7 @@ interface DocumentFormProps {
 export function DocumentForm({
   type,
   customers,
+  products,
   defaultTaxRate,
   initialData,
   onSubmit,
@@ -34,6 +36,9 @@ export function DocumentForm({
   );
   const [paymentMethod, setPaymentMethod] = useState(
     (initialData as any)?.paymentMethod || ''
+  );
+  const [proviso, setProviso] = useState(
+    (initialData as any)?.proviso || 'お品代として'
   );
   const [items, setItems] = useState<LineItem[]>(
     initialData?.items || [
@@ -91,6 +96,7 @@ export function DocumentForm({
       onSubmit({
         ...baseData,
         paymentMethod,
+        proviso,
       } as any);
     }
   };
@@ -120,6 +126,14 @@ export function DocumentForm({
     { value: 'クレジットカード', label: 'クレジットカード' },
     { value: '口座振替', label: '口座振替' },
     { value: 'その他', label: 'その他' },
+  ];
+
+  const provisoOptions = [
+    { value: 'お品代として', label: 'お品代として' },
+    { value: '商品代金として', label: '商品代金として' },
+    { value: 'サービス料として', label: 'サービス料として' },
+    { value: 'コンサルティング費用として', label: 'コンサルティング費用として' },
+    { value: '業務委託費として', label: '業務委託費として' },
   ];
 
   return (
@@ -164,12 +178,36 @@ export function DocumentForm({
             />
           )}
           {type === 'receipt' && (
-            <Select
-              label="支払方法"
-              options={paymentMethodOptions}
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-            />
+            <>
+              <Select
+                label="支払方法"
+                options={paymentMethodOptions}
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+              />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">但し書き</label>
+                <div className="flex gap-2">
+                  <select
+                    value={provisoOptions.some(o => o.value === proviso) ? proviso : ''}
+                    onChange={(e) => e.target.value && setProviso(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">選択またはカスタム入力</option>
+                    {provisoOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={proviso}
+                    onChange={(e) => setProviso(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="カスタム但し書き"
+                  />
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -181,6 +219,7 @@ export function DocumentForm({
           items={items}
           onChange={setItems}
           defaultTaxRate={defaultTaxRate}
+          products={products}
         />
         <div className="mt-6">
           <TotalsSummary items={items} />

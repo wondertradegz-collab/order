@@ -10,6 +10,8 @@ import type {
   AppSettings,
   DocumentType,
   LineItem,
+  Product,
+  PaymentRecord,
 } from '../types';
 
 // デフォルト設定
@@ -53,17 +55,27 @@ interface AppContextType {
   addDocument: (doc: Omit<Document, 'id' | 'documentNumber' | 'createdAt' | 'updatedAt'>) => Document;
   updateDocument: (id: string, doc: Partial<Document>) => void;
   deleteDocument: (id: string) => void;
+  deleteDocuments: (ids: string[]) => void; // 一括削除
   getDocument: (id: string) => Document | undefined;
   getDocumentsByType: (type: DocumentType) => Document[];
   getDocumentsByCustomer: (customerId: string) => Document[];
+  duplicateDocument: (id: string) => Document | null; // 複製
 
   // 見積書から請求書へ変換
   convertToInvoice: (quotationId: string, dueDate: string) => Invoice | null;
   // 請求書から領収書へ変換
-  convertToReceipt: (invoiceId: string, paymentMethod?: string) => Receipt | null;
+  convertToReceipt: (invoiceId: string, paymentMethod?: string, proviso?: string) => Receipt | null;
 
   // 消し込み（入金処理）
-  recordPayment: (invoiceId: string, amount: number, paidDate: string) => void;
+  paymentRecords: PaymentRecord[];
+  recordPayment: (invoiceId: string, amount: number, paidDate: string, method?: string, note?: string) => void;
+  getPaymentsByInvoice: (invoiceId: string) => PaymentRecord[];
+
+  // 商品マスタ
+  products: Product[];
+  addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Product;
+  updateProduct: (id: string, product: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
 
   // 設定
   settings: AppSettings;
@@ -79,6 +91,8 @@ const AppContext = createContext<AppContextType | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [customers, setCustomers] = useLocalStorage<Customer[]>('invoice-app-customers', []);
   const [documents, setDocuments] = useLocalStorage<Document[]>('invoice-app-documents', []);
+  const [products, setProducts] = useLocalStorage<Product[]>('invoice-app-products', []);
+  const [paymentRecords, setPaymentRecords] = useLocalStorage<PaymentRecord[]>('invoice-app-payments', []);
   const [settings, setSettings] = useLocalStorage<AppSettings>('invoice-app-settings', defaultSettings);
 
   // 顧客操作
@@ -180,6 +194,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setDocuments((prev) => prev.filter((d) => d.id !== id));
   }, [setDocuments]);
 
+  const deleteDocuments = useCallback((ids: string[]) => {
+    setDocuments((prev) => prev.filter((d) => !ids.includes(d.id)));
+  }, [setDocuments]);
+
   const getDocument = useCallback((id: string) => {
     return documents.find((d) => d.id === id);
   }, [documents]);
@@ -191,6 +209,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const getDocumentsByCustomer = useCallback((customerId: string) => {
     return documents.filter((d) => d.customerId === customerId);
   }, [documents]);
+
+  // 書類の複製
+  const duplicateDocument = useCallback((id: string): Document | null => {
+    const original = documents.find((d) => d.id === id);
+    if (!original) return null;
+
+    const now = new Date().toISOString();
+    const documentNumber = generateDocumentNumber(original.type);
+
+    const duplicated = {
+      ...original,
+      id: uuidv4(),
+      documentNumber,
+      status: 'draft' as const,
+      issueDate: now.split('T')[0],
+      items: original.items.map((item) => ({ ...item, id: uuidv4() })),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // 請求書の場合は入金情報をリセット
+    if (duplicated.type === 'invoice') {
+      (duplicated as Invoice).paidAmount = 0;
+      (duplicated as Invoice).paidDate = undefined;
+    }
+
+    setDocuments((prev) => [...prev, duplicated as Document]);
+    return duplicated as Document;
+  }, [documents, generateDocumentNumber, setDocuments]);
 
   // 見積書→請求書変換
   const convertToInvoice = useCallback((quotationId: string, dueDate: string): Invoice | null => {
@@ -212,6 +259,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       items: quotation.items.map((item) => ({ ...item, id: uuidv4() })),
       ...totals,
       paidAmount: 0,
+      notes: quotation.notes,
       quotationId,
       createdAt: now,
       updatedAt: now,
@@ -222,7 +270,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [documents, generateDocumentNumber, calculateTotals, setDocuments]);
 
   // 請求書→領収書変換
-  const convertToReceipt = useCallback((invoiceId: string, paymentMethod?: string): Receipt | null => {
+  const convertToReceipt = useCallback((invoiceId: string, paymentMethod?: string, proviso?: string): Receipt | null => {
     const invoice = documents.find((d) => d.id === invoiceId && d.type === 'invoice') as Invoice | undefined;
     if (!invoice) return null;
 
@@ -241,6 +289,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       taxAmount: invoice.taxAmount,
       total: invoice.total,
       paymentMethod,
+      proviso: proviso || 'お品代として',
       invoiceId,
       createdAt: now,
       updatedAt: now,
@@ -250,8 +299,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return newReceipt;
   }, [documents, generateDocumentNumber, setDocuments]);
 
-  // 消し込み処理
-  const recordPayment = useCallback((invoiceId: string, amount: number, paidDate: string) => {
+  // 消し込み処理（入金履歴も記録）
+  const recordPayment = useCallback((invoiceId: string, amount: number, paidDate: string, method?: string, note?: string) => {
+    // 入金履歴を追加
+    const paymentRecord: PaymentRecord = {
+      id: uuidv4(),
+      invoiceId,
+      amount,
+      paidDate,
+      method,
+      note,
+      createdAt: new Date().toISOString(),
+    };
+    setPaymentRecords((prev) => [...prev, paymentRecord]);
+
+    // 請求書を更新
     setDocuments((prev) =>
       prev.map((d) => {
         if (d.id !== invoiceId || d.type !== 'invoice') return d;
@@ -269,7 +331,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       })
     );
-  }, [setDocuments]);
+  }, [setPaymentRecords, setDocuments]);
+
+  const getPaymentsByInvoice = useCallback((invoiceId: string) => {
+    return paymentRecords.filter((p) => p.invoiceId === invoiceId);
+  }, [paymentRecords]);
+
+  // 商品マスタ操作
+  const addProduct = useCallback((product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product => {
+    const now = new Date().toISOString();
+    const newProduct: Product = {
+      ...product,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setProducts((prev) => [...prev, newProduct]);
+    return newProduct;
+  }, [setProducts]);
+
+  const updateProduct = useCallback((id: string, product: Partial<Product>) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, ...product, updatedAt: new Date().toISOString() } : p
+      )
+    );
+  }, [setProducts]);
+
+  const deleteProduct = useCallback((id: string) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  }, [setProducts]);
 
   // 設定更新
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
@@ -293,12 +384,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addDocument,
     updateDocument,
     deleteDocument,
+    deleteDocuments,
     getDocument,
     getDocumentsByType,
     getDocumentsByCustomer,
+    duplicateDocument,
     convertToInvoice,
     convertToReceipt,
+    paymentRecords,
     recordPayment,
+    getPaymentsByInvoice,
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
     settings,
     updateSettings,
     generateDocumentNumber,
@@ -313,12 +412,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addDocument,
     updateDocument,
     deleteDocument,
+    deleteDocuments,
     getDocument,
     getDocumentsByType,
     getDocumentsByCustomer,
+    duplicateDocument,
     convertToInvoice,
     convertToReceipt,
+    paymentRecords,
     recordPayment,
+    getPaymentsByInvoice,
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
     settings,
     updateSettings,
     generateDocumentNumber,

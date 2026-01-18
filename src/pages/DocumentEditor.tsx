@@ -12,7 +12,7 @@ interface DocumentEditorProps {
 export function DocumentEditor({ type, mode }: DocumentEditorProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { customers, getDocument, addDocument, updateDocument, settings } = useApp();
+  const { customers, products, getDocument, addDocument, updateDocument, settings } = useApp();
 
   const document = mode === 'edit' && id ? getDocument(id) : undefined;
   const typeLabel = getDocumentTypeLabel(type);
@@ -80,6 +80,7 @@ export function DocumentEditor({ type, mode }: DocumentEditorProps) {
         <DocumentForm
           type={type}
           customers={customers}
+          products={products}
           defaultTaxRate={settings.defaultTaxRate}
           initialData={document}
           onSubmit={handleSubmit}

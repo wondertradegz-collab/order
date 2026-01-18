@@ -294,3 +294,62 @@ export interface Memo {
   createdAt: string;
   updatedAt: string;
 }
+
+// ====================================
+// 割り勘経費（グループ経費精算）
+// ====================================
+
+// 割り勘の参加者
+export interface ExpenseSplitParticipant {
+  id: string;
+  name: string;
+  customerId?: string; // 顧客として登録されている場合
+  totalAmount: number; // この参加者の合計請求額
+  invoiceId?: string; // 発行した請求書のID
+  invoiceIssued: boolean; // 請求書発行済み
+  paymentReceived: boolean; // 振込完了
+  paymentDate?: string; // 振込日
+}
+
+// 割り勘の経費項目（各行）の分割情報
+export interface ExpenseSplitAmount {
+  participantId: string;
+  amount: number; // この参加者の負担額
+}
+
+// 割り勘の経費項目（各行）
+export interface ExpenseSplitItem {
+  id: string;
+  date: string;
+  description: string;
+  totalAmount: number; // 合計金額（円）
+  splits: ExpenseSplitAmount[];
+  receiptUrl?: string; // 領収書URL（外部リンク）
+  receiptImage?: string; // 領収書画像（base64）
+  note?: string;
+}
+
+// 割り勘経費（グループ経費）
+export interface ExpenseSplit {
+  id: string;
+  name: string; // 例：「広州202403精算」
+  description?: string;
+  participants: ExpenseSplitParticipant[];
+  items: ExpenseSplitItem[];
+  totalAmount: number; // 総合計
+  paidByParticipantId?: string; // 立替した人（参加者ID）
+  status: ExpenseSplitStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 割り勘経費のステータス
+export type ExpenseSplitStatus = 'draft' | 'confirmed' | 'partially_invoiced' | 'fully_invoiced' | 'completed';
+
+export const EXPENSE_SPLIT_STATUS_LABELS: Record<ExpenseSplitStatus, string> = {
+  draft: '作成中',
+  confirmed: '確定',
+  partially_invoiced: '一部請求済',
+  fully_invoiced: '全請求済',
+  completed: '完了',
+};

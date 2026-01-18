@@ -17,6 +17,7 @@ import type {
   ItemSet,
   ExpenseReport,
   Memo,
+  ExpenseSplit,
 } from '../types';
 
 // デフォルト設定
@@ -124,6 +125,15 @@ interface AppContextType {
   getMemosByDocument: (documentId: string) => Memo[];
   getIncompleteTasks: () => Memo[];
 
+  // 割り勘経費
+  expenseSplits: ExpenseSplit[];
+  addExpenseSplit: (split: Omit<ExpenseSplit, 'id' | 'createdAt' | 'updatedAt'>) => ExpenseSplit;
+  updateExpenseSplit: (id: string, split: Partial<ExpenseSplit>) => void;
+  deleteExpenseSplit: (id: string) => void;
+  getExpenseSplit: (id: string) => ExpenseSplit | undefined;
+  generateInvoiceForParticipant: (splitId: string, participantId: string, dueDate: string, notes?: string) => Invoice | null;
+  updateParticipantPayment: (splitId: string, participantId: string, paymentReceived: boolean, paymentDate?: string) => void;
+
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
@@ -141,6 +151,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [itemSets, setItemSets] = useLocalStorage<ItemSet[]>('invoice-app-itemsets', []);
   const [expenseReports, setExpenseReports] = useLocalStorage<ExpenseReport[]>('invoice-app-expense-reports', []);
   const [memos, setMemos] = useLocalStorage<Memo[]>('invoice-app-memos', []);
+  const [expenseSplits, setExpenseSplits] = useLocalStorage<ExpenseSplit[]>('invoice-app-expense-splits', []);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -639,6 +650,145 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return memos.filter((m) => m.isTask && !m.completed);
   }, [memos]);
 
+  // 割り勘経費操作
+  const addExpenseSplit = useCallback((split: Omit<ExpenseSplit, 'id' | 'createdAt' | 'updatedAt'>): ExpenseSplit => {
+    const now = new Date().toISOString();
+    const newSplit: ExpenseSplit = {
+      ...split,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setExpenseSplits((prev) => [...prev, newSplit]);
+    return newSplit;
+  }, [setExpenseSplits]);
+
+  const updateExpenseSplit = useCallback((id: string, split: Partial<ExpenseSplit>) => {
+    setExpenseSplits((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, ...split, updatedAt: new Date().toISOString() } : s
+      )
+    );
+  }, [setExpenseSplits]);
+
+  const deleteExpenseSplit = useCallback((id: string) => {
+    setExpenseSplits((prev) => prev.filter((s) => s.id !== id));
+  }, [setExpenseSplits]);
+
+  const getExpenseSplit = useCallback((id: string) => {
+    return expenseSplits.find((s) => s.id === id);
+  }, [expenseSplits]);
+
+  // 参加者への請求書を自動生成
+  const generateInvoiceForParticipant = useCallback((
+    splitId: string,
+    participantId: string,
+    dueDate: string,
+    notes?: string
+  ): Invoice | null => {
+    const split = expenseSplits.find((s) => s.id === splitId);
+    if (!split) return null;
+
+    const participant = split.participants.find((p) => p.id === participantId);
+    if (!participant || !participant.customerId) return null;
+
+    // 参加者の明細を作成
+    const items: LineItem[] = split.items
+      .filter((item) => {
+        const participantSplit = item.splits.find((s) => s.participantId === participantId);
+        return participantSplit && participantSplit.amount > 0;
+      })
+      .map((item) => {
+        const participantSplit = item.splits.find((s) => s.participantId === participantId)!;
+        return {
+          id: uuidv4(),
+          description: `${item.date} ${item.description}`,
+          quantity: 1,
+          unit: '式',
+          unitPrice: participantSplit.amount,
+          taxRate: 0, // 立替金は通常非課税
+          taxCategory: 'non_taxable' as const,
+        };
+      });
+
+    if (items.length === 0) return null;
+
+    const now = new Date().toISOString();
+    const documentNumber = generateDocumentNumber('invoice');
+    const totals = calculateTotals(items);
+
+    const newInvoice: Invoice = {
+      id: uuidv4(),
+      documentNumber,
+      type: 'invoice',
+      status: 'draft',
+      customerId: participant.customerId,
+      issueDate: now.split('T')[0],
+      dueDate,
+      items,
+      ...totals,
+      paidAmount: 0,
+      notes: notes || `${split.name} 精算分`,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    setDocuments((prev) => [...prev, newInvoice]);
+
+    // 参加者の請求書発行ステータスを更新
+    setExpenseSplits((prev) =>
+      prev.map((s) => {
+        if (s.id !== splitId) return s;
+        const updatedParticipants = s.participants.map((p) =>
+          p.id === participantId
+            ? { ...p, invoiceId: newInvoice.id, invoiceIssued: true }
+            : p
+        );
+        // 全員請求済みかチェック
+        const allInvoiced = updatedParticipants
+          .filter((p) => p.totalAmount > 0)
+          .every((p) => p.invoiceIssued);
+        return {
+          ...s,
+          participants: updatedParticipants,
+          status: allInvoiced ? 'fully_invoiced' : 'partially_invoiced',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    return newInvoice;
+  }, [expenseSplits, generateDocumentNumber, calculateTotals, setDocuments, setExpenseSplits]);
+
+  // 参加者の支払いステータスを更新
+  const updateParticipantPayment = useCallback((
+    splitId: string,
+    participantId: string,
+    paymentReceived: boolean,
+    paymentDate?: string
+  ) => {
+    setExpenseSplits((prev) =>
+      prev.map((s) => {
+        if (s.id !== splitId) return s;
+        const updatedParticipants = s.participants.map((p) =>
+          p.id === participantId
+            ? { ...p, paymentReceived, paymentDate: paymentReceived ? paymentDate : undefined }
+            : p
+        );
+        // 全員支払い済みかチェック
+        const allPaid = updatedParticipants
+          .filter((p) => p.totalAmount > 0)
+          .every((p) => p.paymentReceived);
+        return {
+          ...s,
+          participants: updatedParticipants,
+          status: allPaid ? 'completed' : s.status,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  }, [setExpenseSplits]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -692,6 +842,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     getMemosByCustomer,
     getMemosByDocument,
     getIncompleteTasks,
+    expenseSplits,
+    addExpenseSplit,
+    updateExpenseSplit,
+    deleteExpenseSplit,
+    getExpenseSplit,
+    generateInvoiceForParticipant,
+    updateParticipantPayment,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -747,6 +904,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     getMemosByCustomer,
     getMemosByDocument,
     getIncompleteTasks,
+    expenseSplits,
+    addExpenseSplit,
+    updateExpenseSplit,
+    deleteExpenseSplit,
+    getExpenseSplit,
+    generateInvoiceForParticipant,
+    updateParticipantPayment,
     generateDocumentNumber,
     calculateTotals,
   ]);

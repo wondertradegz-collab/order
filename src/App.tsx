@@ -17,6 +17,8 @@ import {
   ExpenseEditor,
   ExpenseDetail,
   Memos,
+  ExpenseSplits,
+  ExpenseSplitEditor,
 } from './pages';
 
 function App() {
@@ -47,6 +49,9 @@ function App() {
               <Route path="/expenses/new" element={<ExpenseEditor mode="create" />} />
               <Route path="/expenses/:id" element={<ExpenseDetail />} />
               <Route path="/expenses/:id/edit" element={<ExpenseEditor mode="edit" />} />
+              <Route path="/expense-splits" element={<ExpenseSplits />} />
+              <Route path="/expense-splits/new" element={<ExpenseSplitEditor mode="create" />} />
+              <Route path="/expense-splits/:id" element={<ExpenseSplitEditor mode="edit" />} />
               <Route path="/memos" element={<Memos />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />

@@ -42,6 +42,9 @@ export const translations = {
     taxRate: { ja: '税率', zh: '税率', en: 'Tax Rate' },
     yen: { ja: '円', zh: '日元', en: 'JPY' },
     yuan: { ja: '元', zh: '元', en: 'CNY' },
+    actions: { ja: '操作', zh: '操作', en: 'Actions' },
+    people: { ja: '人', zh: '人', en: '' },
+    items: { ja: '件', zh: '项', en: '' },
   },
 
   // App Header & Navigation
@@ -54,6 +57,7 @@ export const translations = {
     customers: { ja: '顧客管理', zh: '客户管理', en: 'Customers' },
     products: { ja: '商品管理', zh: '商品管理', en: 'Products' },
     expenses: { ja: '経費精算', zh: '费用报销', en: 'Expenses' },
+    expenseSplits: { ja: '割り勘精算', zh: '分摊结算', en: 'Expense Splits' },
     memos: { ja: 'メモ・タスク', zh: '备忘录', en: 'Memos' },
     reports: { ja: 'レポート', zh: '报表', en: 'Reports' },
     settings: { ja: '設定', zh: '设置', en: 'Settings' },
@@ -452,6 +456,71 @@ export const translations = {
     incompleteTasks: { ja: '未完了タスク', zh: '未完成的任务', en: 'Incomplete Tasks' },
     deleteConfirm: { ja: 'このメモを削除しますか？', zh: '确定要删除此备忘录吗？', en: 'Delete this memo?' },
     type: { ja: '種類', zh: '类型', en: 'Type' },
+  },
+
+  // Expense Split (割り勘経費)
+  expenseSplit: {
+    title: { ja: '割り勘精算', zh: '分摊结算', en: 'Expense Splitting' },
+    subtitle: { ja: 'グループでの経費を分割して請求書を自動生成', zh: '分摊团体费用并自动生成发票', en: 'Split group expenses and auto-generate invoices' },
+    create: { ja: '新規作成', zh: '新建', en: 'Create New' },
+    edit: { ja: '編集', zh: '编辑', en: 'Edit' },
+    noData: { ja: '割り勘精算がありません', zh: '没有分摊结算', en: 'No expense splits' },
+    createFirst: { ja: '最初の割り勘精算を作成しましょう', zh: '创建您的第一个分摊结算', en: 'Create your first expense split' },
+    deleteConfirm: { ja: 'この割り勘精算を削除しますか？', zh: '确定要删除此分摊结算吗？', en: 'Delete this expense split?' },
+
+    // Basic Info
+    basicInfo: { ja: '基本情報', zh: '基本信息', en: 'Basic Information' },
+    name: { ja: '精算名', zh: '结算名称', en: 'Split Name' },
+    namePlaceholder: { ja: '例：広州202403精算', zh: '例：广州202403结算', en: 'e.g. Guangzhou Mar 2024' },
+    descriptionPlaceholder: { ja: '説明やメモ', zh: '说明或备注', en: 'Description or notes' },
+    paidBy: { ja: '立替者', zh: '垫付人', en: 'Paid By' },
+    selectPaidBy: { ja: '立替した人を選択', zh: '选择垫付人', en: 'Select who paid' },
+    payer: { ja: '立替', zh: '垫付', en: 'Payer' },
+
+    // Status
+    statusConfirmed: { ja: '確定', zh: '已确认', en: 'Confirmed' },
+    statusPartiallyInvoiced: { ja: '一部請求済', zh: '部分已开票', en: 'Partially Invoiced' },
+    statusFullyInvoiced: { ja: '全請求済', zh: '全部已开票', en: 'Fully Invoiced' },
+
+    // Participants
+    participants: { ja: '参加者', zh: '参与者', en: 'Participants' },
+    addParticipant: { ja: '参加者を追加', zh: '添加参与者', en: 'Add Participant' },
+    editParticipant: { ja: '参加者を編集', zh: '编辑参与者', en: 'Edit Participant' },
+    noParticipants: { ja: '参加者を追加してください', zh: '请添加参与者', en: 'Please add participants' },
+    participantName: { ja: '名前', zh: '姓名', en: 'Name' },
+    participantNamePlaceholder: { ja: '例：田中さん', zh: '例：田中', en: 'e.g. Tanaka' },
+    linkedCustomer: { ja: '顧客連携', zh: '关联客户', en: 'Linked Customer' },
+    noCustomerLink: { ja: '連携なし', zh: '无关联', en: 'No link' },
+    customerLinkHelp: { ja: '顧客を連携すると請求書を自動発行できます', zh: '关联客户后可自动生成发票', en: 'Link a customer to auto-generate invoices' },
+    totalShare: { ja: '負担額', zh: '分摊金额', en: 'Share' },
+
+    // Invoice & Payment
+    invoiceStatus: { ja: '請求書', zh: '发票', en: 'Invoice' },
+    paymentStatus: { ja: '振込', zh: '付款', en: 'Payment' },
+    issued: { ja: '発行済', zh: '已开具', en: 'Issued' },
+    issueInvoice: { ja: '発行', zh: '开具', en: 'Issue' },
+    invoiced: { ja: '請求済', zh: '已开票', en: 'Invoiced' },
+    paid: { ja: '振込済', zh: '已付款', en: 'Paid' },
+    generateInvoice: { ja: '請求書を発行', zh: '开具发票', en: 'Generate Invoice' },
+    invoiceFor: { ja: 'への請求書を発行:', zh: '开具发票金额:', en: 'invoice for:' },
+    invoiceNotesPlaceholder: { ja: '請求書の備考', zh: '发票备注', en: 'Invoice notes' },
+
+    // Items
+    expenseItems: { ja: '経費明細', zh: '费用明细', en: 'Expense Items' },
+    addItem: { ja: '明細を追加', zh: '添加明细', en: 'Add Item' },
+    editItem: { ja: '明細を編集', zh: '编辑明细', en: 'Edit Item' },
+    noItems: { ja: '経費明細を追加してください', zh: '请添加费用明细', en: 'Please add expense items' },
+    addParticipantsFirst: { ja: '先に参加者を追加してください', zh: '请先添加参与者', en: 'Please add participants first' },
+    itemCount: { ja: '明細数', zh: '明细数', en: 'Items' },
+    itemDescriptionPlaceholder: { ja: '例：レンタカー、ホテル、食事など', zh: '例：租车、酒店、餐饮等', en: 'e.g. Car rental, hotel, meals' },
+    receipt: { ja: '領収書', zh: '收据', en: 'Receipt' },
+    receiptUrl: { ja: '領収書URL', zh: '收据链接', en: 'Receipt URL' },
+
+    // Split
+    splitAmounts: { ja: '負担額の配分', zh: '分摊金额分配', en: 'Split Amounts' },
+    splitEqually: { ja: '均等に分割', zh: '平均分摊', en: 'Split Equally' },
+    splitTotal: { ja: '配分合計', zh: '分摊合计', en: 'Split Total' },
+    splitMismatch: { ja: '合計と一致していません', zh: '与总金额不符', en: 'Does not match total' },
   },
 } as const;
 

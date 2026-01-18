@@ -23,6 +23,46 @@ const CURRENCY_OPTIONS = [
 export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] }: LineItemEditorProps) {
   const [showProductSelector, setShowProductSelector] = useState<string | null>(null);
   const [foreignCurrencyMode, setForeignCurrencyMode] = useState<Set<string>>(new Set());
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Drag and drop handlers
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newItems = [...items];
+    const [draggedItem] = newItems.splice(draggedIndex, 1);
+    newItems.splice(dropIndex, 0, draggedItem);
+    onChange(newItems);
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   const addItem = () => {
     onChange([
@@ -167,11 +207,29 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
       {/* Items */}
       <div className="space-y-3">
         {items.map((item, index) => (
-          <div key={item.id} className="bg-gray-50 rounded-lg p-3 md:p-2">
+          <div
+            key={item.id}
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`bg-gray-50 dark:bg-gray-700 rounded-lg p-3 md:p-2 transition-all ${
+              draggedIndex === index ? 'opacity-50 scale-95' : ''
+            } ${dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''}`}
+          >
             {/* Mobile Layout */}
             <div className="md:hidden space-y-3">
               <div className="flex items-start justify-between">
-                <span className="text-sm text-gray-500">明細 {index + 1}</span>
+                <div className="flex items-center gap-2">
+                  <div className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">明細 {index + 1}</span>
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -305,6 +363,11 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
             <div className="hidden md:block space-y-2">
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-5 flex gap-2">
+                  <div className="cursor-grab active:cursor-grabbing p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                    </svg>
+                  </div>
                   <input
                     type="text"
                     placeholder="品名・摘要"

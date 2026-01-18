@@ -1,30 +1,35 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { CommandPalette } from '../common/CommandPalette';
+import { SettingsDropdown } from './SettingsDropdown';
+import { ManualModal } from './ManualModal';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
-  { path: '/', label: 'ダッシュボード', icon: HomeIcon },
-  { path: '/quotations', label: '見積書', icon: QuotationIcon },
-  { path: '/invoices', label: '請求書', icon: InvoiceIcon },
-  { path: '/receipts', label: '領収書', icon: ReceiptIcon },
-  { path: '/expenses', label: '経費精算', icon: ExpensesIcon },
-  { path: '/customers', label: '顧客管理', icon: CustomersIcon },
-  { path: '/products', label: '商品マスタ', icon: ProductsIcon },
-  { path: '/reports', label: '売上レポート', icon: ReportsIcon },
-  { path: '/settings', label: '設定', icon: SettingsIcon },
-];
-
 export function Layout({ children }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  useTheme(); // Theme context is needed for dark mode but used in SettingsDropdown
+  const { t } = useLanguage();
+
+  const menuItems = [
+    { path: '/', label: t('nav.dashboard'), icon: HomeIcon },
+    { path: '/quotations', label: t('nav.quotations'), icon: QuotationIcon },
+    { path: '/invoices', label: t('nav.invoices'), icon: InvoiceIcon },
+    { path: '/receipts', label: t('nav.receipts'), icon: ReceiptIcon },
+    { path: '/expenses', label: t('nav.expenses'), icon: ExpensesIcon },
+    { path: '/customers', label: t('nav.customers'), icon: CustomersIcon },
+    { path: '/products', label: t('nav.products'), icon: ProductsIcon },
+    { path: '/reports', label: t('nav.reports'), icon: ReportsIcon },
+    { path: '/settings', label: t('nav.settings'), icon: SettingsIcon },
+  ];
 
   // Global keyboard shortcuts
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -64,23 +69,13 @@ export function Layout({ children }: LayoutProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">請求書管理</h1>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            {isDarkMode ? (
-              <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-              </svg>
-            )}
-          </button>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('nav.appName')}</h1>
+          <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
         </div>
       </header>
+
+      {/* Manual Modal */}
+      <ManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
       {/* Mobile Overlay */}
       {isSidebarOpen && (
@@ -108,7 +103,7 @@ export function Layout({ children }: LayoutProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-gray-900 dark:text-white">請求書管理</span>
+              <span className="text-lg font-bold text-gray-900 dark:text-white">{t('nav.appName')}</span>
             </Link>
             <button
               onClick={() => setIsSidebarOpen(false)}
@@ -128,7 +123,7 @@ export function Layout({ children }: LayoutProps) {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="flex-1 text-left">検索...</span>
+            <span className="flex-1 text-left">{t('common.search')}...</span>
             <kbd className="px-1.5 py-0.5 text-xs bg-white dark:bg-gray-600 rounded">⌘K</kbd>
           </button>
 
@@ -158,28 +153,9 @@ export function Layout({ children }: LayoutProps) {
             })}
           </nav>
 
-          {/* Dark Mode Toggle (Desktop) */}
-          <div className="hidden lg:block px-3 py-4 border-t border-gray-200 dark:border-gray-700">
-            <button
-              onClick={toggleDarkMode}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              {isDarkMode ? (
-                <>
-                  <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="font-medium">ライトモード</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                  </svg>
-                  <span className="font-medium">ダークモード</span>
-                </>
-              )}
-            </button>
+          {/* Settings (Desktop) */}
+          <div className="hidden lg:flex px-3 py-4 border-t border-gray-200 dark:border-gray-700 justify-center">
+            <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
           </div>
         </div>
       </aside>

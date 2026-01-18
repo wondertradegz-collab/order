@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { Layout } from './components/layout/Layout';
 import {
   Dashboard,
@@ -20,8 +21,9 @@ import {
 function App() {
   return (
     <ThemeProvider>
-      <AppProvider>
-        <BrowserRouter basename="/order">
+      <LanguageProvider>
+        <AppProvider>
+          <BrowserRouter basename="/order">
           <Layout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -48,8 +50,9 @@ function App() {
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Layout>
-        </BrowserRouter>
-      </AppProvider>
+          </BrowserRouter>
+        </AppProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

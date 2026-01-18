@@ -1,0 +1,212 @@
+import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { Input, Textarea, Select, Button } from '../common';
+import { LineItemEditor, TotalsSummary } from './LineItemEditor';
+import { getTodayString } from '../../utils/format';
+import type { Document, LineItem, Customer, DocumentType } from '../../types';
+
+interface DocumentFormProps {
+  type: DocumentType;
+  customers: Customer[];
+  defaultTaxRate: number;
+  initialData?: Partial<Document>;
+  onSubmit: (data: Omit<Document, 'id' | 'documentNumber' | 'createdAt' | 'updatedAt'>) => void;
+  onCancel: () => void;
+  submitLabel?: string;
+}
+
+export function DocumentForm({
+  type,
+  customers,
+  defaultTaxRate,
+  initialData,
+  onSubmit,
+  onCancel,
+  submitLabel = '保存',
+}: DocumentFormProps) {
+  const [customerId, setCustomerId] = useState(initialData?.customerId || '');
+  const [issueDate, setIssueDate] = useState(initialData?.issueDate || getTodayString());
+  const [dueDate, setDueDate] = useState(
+    (initialData as any)?.dueDate || getDefaultDueDate()
+  );
+  const [validUntil, setValidUntil] = useState(
+    (initialData as any)?.validUntil || getDefaultValidUntil()
+  );
+  const [paymentMethod, setPaymentMethod] = useState(
+    (initialData as any)?.paymentMethod || ''
+  );
+  const [items, setItems] = useState<LineItem[]>(
+    initialData?.items || [
+      {
+        id: uuidv4(),
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        taxRate: defaultTaxRate,
+      },
+    ]
+  );
+  const [notes, setNotes] = useState(initialData?.notes || '');
+  const [status, setStatus] = useState(initialData?.status || 'draft');
+
+  function getDefaultDueDate(): string {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    return date.toISOString().split('T')[0];
+  }
+
+  function getDefaultValidUntil(): string {
+    const date = new Date();
+    date.setDate(date.getDate() + 14);
+    return date.toISOString().split('T')[0];
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const baseData = {
+      type,
+      status: status as any,
+      customerId,
+      issueDate,
+      items,
+      subtotal: 0,
+      taxAmount: 0,
+      total: 0,
+      notes,
+    };
+
+    if (type === 'quotation') {
+      onSubmit({
+        ...baseData,
+        validUntil,
+      } as any);
+    } else if (type === 'invoice') {
+      onSubmit({
+        ...baseData,
+        dueDate,
+        paidAmount: (initialData as any)?.paidAmount || 0,
+      } as any);
+    } else {
+      onSubmit({
+        ...baseData,
+        paymentMethod,
+      } as any);
+    }
+  };
+
+  const customerOptions = customers.map((c) => ({
+    value: c.id,
+    label: c.companyName ? `${c.companyName} (${c.name})` : c.name,
+  }));
+
+  const statusOptions = [
+    { value: 'draft', label: '下書き' },
+    { value: 'sent', label: '送付済み' },
+    ...(type === 'invoice'
+      ? [
+          { value: 'paid', label: '入金済み' },
+          { value: 'overdue', label: '期限超過' },
+        ]
+      : []),
+    ...(type === 'receipt' ? [{ value: 'paid', label: '発行済み' }] : []),
+    { value: 'cancelled', label: 'キャンセル' },
+  ];
+
+  const paymentMethodOptions = [
+    { value: '', label: '選択してください' },
+    { value: '銀行振込', label: '銀行振込' },
+    { value: '現金', label: '現金' },
+    { value: 'クレジットカード', label: 'クレジットカード' },
+    { value: '口座振替', label: '口座振替' },
+    { value: 'その他', label: 'その他' },
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Basic Info */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Select
+            label="顧客 *"
+            options={customerOptions}
+            value={customerId}
+            onChange={setCustomerId}
+            placeholder="顧客を選択"
+          />
+          <Select
+            label="ステータス"
+            options={statusOptions}
+            value={status}
+            onChange={(val) => setStatus(val as any)}
+          />
+          <Input
+            label="発行日"
+            type="date"
+            value={issueDate}
+            onChange={(e) => setIssueDate(e.target.value)}
+          />
+          {type === 'quotation' && (
+            <Input
+              label="有効期限"
+              type="date"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+            />
+          )}
+          {type === 'invoice' && (
+            <Input
+              label="支払期限"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          )}
+          {type === 'receipt' && (
+            <Select
+              label="支払方法"
+              options={paymentMethodOptions}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Line Items */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">明細</h2>
+        <LineItemEditor
+          items={items}
+          onChange={setItems}
+          defaultTaxRate={defaultTaxRate}
+        />
+        <div className="mt-6">
+          <TotalsSummary items={items} />
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">備考</h2>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="備考・特記事項があれば入力してください"
+          rows={4}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          キャンセル
+        </Button>
+        <Button type="submit" disabled={!customerId || items.length === 0}>
+          {submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
+}

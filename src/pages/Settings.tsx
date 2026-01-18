@@ -78,7 +78,7 @@ const DataManagementSection = () => {
     try {
       restoreBackup(backupPreview);
       window.location.reload();
-    } catch (error) {
+    } catch {
       setRestoreError('復元に失敗しました');
       setIsRestoring(false);
     }
@@ -198,6 +198,7 @@ export function Settings() {
     showDate: true,
   });
 
+  // Sync form state with settings when settings change
   useEffect(() => {
     setCompanyInfo(settings.companyInfo);
     setDefaultTaxRate(settings.defaultTaxRate);
@@ -847,7 +848,7 @@ export function Settings() {
                   <p className="font-medium text-gray-900">{template.name}</p>
                   <p className="text-sm text-gray-500">
                     {template.type === 'quotation' ? '見積書' : template.type === 'invoice' ? '請求書' : '領収書'}
-                    　・　{template.items.length}件の明細
+                    ・{template.items.length}件の明細
                   </p>
                 </div>
                 <button

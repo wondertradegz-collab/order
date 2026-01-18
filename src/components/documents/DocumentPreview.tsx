@@ -157,7 +157,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             {document.type === 'invoice' && companyInfo.bankName && (
               <div className="border-t border-black pt-2 text-xs">
                 <p className="font-semibold mb-1">お振込先</p>
-                <p>{companyInfo.bankName}　{companyInfo.bankBranch}</p>
+                <p>{companyInfo.bankName} {companyInfo.bankBranch}</p>
                 <p>{companyInfo.accountType} {companyInfo.accountNumber}</p>
                 <p>{companyInfo.accountName}</p>
               </div>

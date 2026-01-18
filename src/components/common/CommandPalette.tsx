@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { formatCurrency, getDocumentTypeLabel } from '../../utils/format';
@@ -27,6 +27,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { documents, customers, products } = useApp();
 
+  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setQuery('');
@@ -116,9 +117,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     return searchResults.slice(0, 10);
   }, [query, documents, customers, products, quickActions]);
 
-  useEffect(() => {
+  // Handle query change and reset selected index
+  const handleQueryChange = useCallback((newQuery: string) => {
+    setQuery(newQuery);
     setSelectedIndex(0);
-  }, [query]);
+  }, []);
 
   const handleSelect = (result: SearchResult) => {
     if (result.path) {
@@ -185,7 +188,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               className="flex-1 px-4 py-4 text-gray-900 dark:text-white bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-gray-400"
               placeholder="書類、顧客、商品を検索..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleKeyDown}
             />
             <kbd className="hidden sm:inline-flex items-center px-2 py-1 text-xs font-medium text-gray-400 bg-gray-100 dark:bg-gray-700 rounded">

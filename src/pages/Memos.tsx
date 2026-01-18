@@ -334,6 +334,7 @@ function MemoFormModal({ isOpen, onClose, onSave, memo, customers, documents, t 
     documentType: undefined as DocumentType | undefined,
   });
 
+  // Reset form when modal opens or memo changes
   useEffect(() => {
     if (isOpen) {
       if (memo && memo.id) {

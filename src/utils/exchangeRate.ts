@@ -45,7 +45,7 @@ export async function getLatestExchangeRate(
       base,
       target,
     };
-  } catch (error) {
+  } catch {
     // フォールバック
     return await getExchangeRateFromFallback(base, target, 'latest');
   }
@@ -83,7 +83,7 @@ export async function getHistoricalExchangeRate(
       base,
       target,
     };
-  } catch (error) {
+  } catch {
     return await getExchangeRateFromFallback(base, target, date);
   }
 }

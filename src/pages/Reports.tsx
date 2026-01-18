@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -236,10 +236,10 @@ export function Reports() {
       .reduce((sum, r) => sum + r.total, 0);
   }, [documents]);
 
-  const getCustomerName = (customerId: string) => {
+  const getCustomerName = useCallback((customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     return customer?.companyName || customer?.name || '不明';
-  };
+  }, [customers]);
 
   const topCustomers = useMemo(() => {
     return Object.entries(stats.salesByCustomer)
@@ -250,7 +250,7 @@ export function Reports() {
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 10);
-  }, [stats.salesByCustomer, customers]);
+  }, [stats.salesByCustomer, getCustomerName]);
 
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
   const maxMonthlySales = Math.max(...stats.monthlySales, 1);

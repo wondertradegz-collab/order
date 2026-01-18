@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
-import { formatCurrency, formatDate, getDocumentTypeLabel } from '../../utils/format';
-import type { Document, Customer, CompanyInfo, LineItem } from '../../types';
+import { formatDate, getDocumentTypeLabel } from '../../utils/format';
+import type { Document, Customer, CompanyInfo, LineItem, Receipt } from '../../types';
 
 interface DocumentPreviewProps {
   document: Document;
@@ -18,179 +18,259 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 const formatItemDescription = (item: LineItem): string => {
-  let desc = item.description || '-';
+  let desc = item.description || '';
   // Add foreign currency calculation if present
   if (item.foreignAmount && item.exchangeRate && item.foreignCurrency) {
     const symbol = CURRENCY_SYMBOLS[item.foreignCurrency] || item.foreignCurrency;
-    desc += ` (${item.foreignAmount}${symbol} × ${item.exchangeRate}円)`;
+    desc += `(${item.foreignAmount}${symbol} × ${item.exchangeRate}円)`;
   }
   return desc;
 };
 
+const formatNumber = (num: number): string => {
+  return '¥' + num.toLocaleString('ja-JP');
+};
+
+// Empty rows to fill table to 20 items
+const TOTAL_ROWS = 20;
+
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ document, customer, companyInfo }, ref) => {
-    const subtotal = document.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const taxAmount = document.items.reduce(
       (sum, item) => sum + Math.floor(item.quantity * item.unitPrice * (item.taxRate / 100)),
       0
     );
 
+    // Get document title based on type
+    const getDocumentTitle = () => {
+      switch (document.type) {
+        case 'quotation':
+          return 'ご見積書';
+        case 'invoice':
+          return 'ご請求書';
+        case 'receipt':
+          return '領収書';
+      }
+    };
+
+    // Get receipt proviso if available
+    const getProviso = () => {
+      if (document.type === 'receipt' && 'proviso' in document) {
+        return (document as Receipt).proviso;
+      }
+      return null;
+    };
+
+    // Create array of items padded to TOTAL_ROWS
+    const paddedItems = [...document.items];
+    while (paddedItems.length < TOTAL_ROWS) {
+      paddedItems.push({
+        id: `empty-${paddedItems.length}`,
+        description: '',
+        quantity: 0,
+        unitPrice: 0,
+        taxRate: 0,
+      });
+    }
+
     return (
       <div
         ref={ref}
-        className="bg-white p-8 max-w-4xl mx-auto"
-        style={{ fontFamily: "'Noto Sans JP', sans-serif" }}
+        className="bg-white p-6 max-w-4xl mx-auto text-sm"
+        style={{
+          fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif",
+          fontSize: '11px',
+          lineHeight: '1.4',
+        }}
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-wider">
-            {getDocumentTypeLabel(document.type)}
-          </h1>
-          <p className="text-sm text-gray-500 mt-2">
-            No. {document.documentNumber}
-          </p>
-        </div>
+        {/* Document Title */}
+        <h1 className="text-2xl font-bold text-center mb-6 tracking-widest border-b-2 border-black pb-2">
+          {getDocumentTitle()}
+        </h1>
 
-        {/* Two Column Header */}
-        <div className="grid grid-cols-2 gap-8 mb-8">
+        {/* Header Section */}
+        <div className="flex justify-between mb-4">
           {/* Left: Customer Info */}
-          <div>
-            <div className="border-b-2 border-gray-900 pb-2 mb-4">
-              <p className="text-lg font-semibold text-gray-900">
-                {customer?.companyName || customer?.name || '顧客情報なし'}
+          <div className="w-1/2">
+            <div className="border-b border-black pb-1 mb-2">
+              <p className="font-semibold">
+                {customer?.companyName || customer?.name || ''}様
               </p>
-              {customer?.companyName && customer?.name && (
-                <p className="text-sm text-gray-600">{customer.name} 様</p>
-              )}
-              {!customer?.companyName && <span className="text-sm text-gray-600">様</span>}
             </div>
-            {customer?.postalCode && (
-              <p className="text-sm text-gray-600">〒{customer.postalCode}</p>
+
+            {/* Subject/Title */}
+            {document.notes && (
+              <div className="border border-black px-2 py-1 mb-2 font-bold text-base">
+                {document.notes.split('\n')[0]}
+              </div>
             )}
-            {customer?.address && (
-              <p className="text-sm text-gray-600">{customer.address}</p>
+
+            <p className="text-xs mb-2">
+              下記のとおりご請求申し上げます。<br />
+              何卒、宜しくお願い申し上げます。
+            </p>
+
+            {/* Total Amount Box */}
+            <div className="border-2 border-black px-3 py-2 mb-3">
+              <span className="text-2xl font-bold">{formatNumber(document.total)}</span>
+            </div>
+
+            {/* Bank Info (for invoices) */}
+            {document.type === 'invoice' && companyInfo.bankName && (
+              <div className="border-t border-black pt-2 text-xs">
+                <p className="font-semibold mb-1">お振込先</p>
+                <p>{companyInfo.bankName}　{companyInfo.bankBranch}</p>
+                <p>支店番号{companyInfo.bankBranch?.match(/\d+/)?.[0] || ''}</p>
+                <p>{companyInfo.accountType} {companyInfo.accountNumber}</p>
+                <p>{companyInfo.accountName}</p>
+              </div>
+            )}
+
+            {/* Receipt specific: Proviso */}
+            {getProviso() && (
+              <div className="border-t border-black pt-2 text-xs mt-2">
+                <p>但し、{getProviso()}</p>
+              </div>
             )}
           </div>
 
-          {/* Right: Company Info & Dates */}
-          <div className="text-right">
-            <p className="text-sm text-gray-600">発行日: {formatDate(document.issueDate, 'long')}</p>
-            {document.type === 'invoice' && 'dueDate' in document && (
-              <p className="text-sm text-gray-600">支払期限: {formatDate(document.dueDate, 'long')}</p>
-            )}
-            {document.type === 'quotation' && 'validUntil' in document && document.validUntil && (
-              <p className="text-sm text-gray-600">有効期限: {formatDate(document.validUntil, 'long')}</p>
-            )}
+          {/* Right: Document Info & Company Info */}
+          <div className="w-1/2 pl-8">
+            <div className="flex justify-between mb-2 text-xs">
+              <span></span>
+              <div className="text-right">
+                <p>{getDocumentTypeLabel(document.type).replace('書', '')}No.{document.documentNumber}</p>
+                <p>{formatDate(document.issueDate, 'long')}</p>
+              </div>
+            </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="font-semibold text-gray-900">{companyInfo.name || '会社名未設定'}</p>
-              {companyInfo.postalCode && <p className="text-sm text-gray-600">〒{companyInfo.postalCode}</p>}
-              {companyInfo.address && <p className="text-sm text-gray-600">{companyInfo.address}</p>}
-              {companyInfo.phone && <p className="text-sm text-gray-600">TEL: {companyInfo.phone}</p>}
-              {companyInfo.email && <p className="text-sm text-gray-600">Email: {companyInfo.email}</p>}
+            {/* Company Info */}
+            <div className="text-right mb-4">
+              <p className="font-semibold">{companyInfo.name || ''}</p>
+              {companyInfo.address && <p className="text-xs">{companyInfo.address}</p>}
               {companyInfo.registrationNumber && (
-                <p className="text-sm text-gray-600 mt-1">
-                  登録番号: {companyInfo.registrationNumber}
-                </p>
+                <p className="text-xs">登録番号：{companyInfo.registrationNumber}</p>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Total Amount Box */}
-        <div className="bg-gray-100 rounded-lg p-4 mb-8 text-center">
-          <p className="text-sm text-gray-600 mb-1">
-            {document.type === 'receipt' ? '領収金額' : 'ご請求金額'}
-          </p>
-          <p className="text-3xl font-bold text-gray-900">
-            {formatCurrency(document.total)}
-          </p>
+            {/* Stamp Area */}
+            <div className="flex justify-end">
+              <table className="border-collapse text-center text-xs">
+                <thead>
+                  <tr>
+                    <th className="border border-black w-16 px-2 py-1">承認</th>
+                    <th className="border border-black w-16 px-2 py-1">担当</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-black h-16"></td>
+                    <td className="border border-black h-16"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* Items Table */}
-        <table className="w-full mb-8">
+        <table className="w-full border-collapse text-xs mb-2">
           <thead>
-            <tr className="border-b-2 border-gray-900">
-              <th className="py-2 text-left text-sm font-semibold text-gray-900">品名・摘要</th>
-              <th className="py-2 text-right text-sm font-semibold text-gray-900 w-20">数量</th>
-              <th className="py-2 text-right text-sm font-semibold text-gray-900 w-28">単価</th>
-              <th className="py-2 text-right text-sm font-semibold text-gray-900 w-16">税率</th>
-              <th className="py-2 text-right text-sm font-semibold text-gray-900 w-28">金額</th>
+            <tr className="bg-gray-100">
+              <th className="border border-black px-1 py-1 w-8 text-center">No.</th>
+              <th className="border border-black px-2 py-1 text-left">項目</th>
+              <th className="border border-black px-1 py-1 w-12 text-center">数量</th>
+              <th className="border border-black px-1 py-1 w-10 text-center">単位</th>
+              <th className="border border-black px-2 py-1 w-20 text-right">単価</th>
+              <th className="border border-black px-2 py-1 w-20 text-right">小計</th>
+              <th className="border border-black px-2 py-1 w-24 text-left">備考</th>
             </tr>
           </thead>
           <tbody>
-            {document.items.map((item) => (
-              <tr key={item.id} className="border-b border-gray-200">
-                <td className="py-3 text-sm text-gray-900">{formatItemDescription(item)}</td>
-                <td className="py-3 text-sm text-gray-900 text-right">
-                  {item.quantity}
-                  {item.unit && <span className="text-gray-500 ml-1">{item.unit}</span>}
-                </td>
-                <td className="py-3 text-sm text-gray-900 text-right">{formatCurrency(item.unitPrice)}</td>
-                <td className="py-3 text-sm text-gray-900 text-right">{item.taxRate}%</td>
-                <td className="py-3 text-sm text-gray-900 text-right">
-                  {formatCurrency(item.quantity * item.unitPrice)}
-                </td>
-              </tr>
-            ))}
+            {paddedItems.map((item, index) => {
+              const isRealItem = index < document.items.length;
+              const itemSubtotal = item.quantity * item.unitPrice;
+
+              return (
+                <tr key={item.id}>
+                  <td className="border border-black px-1 py-1 text-center">
+                    {index + 1}
+                  </td>
+                  <td className="border border-black px-2 py-1">
+                    {isRealItem ? formatItemDescription(item) : ''}
+                  </td>
+                  <td className="border border-black px-1 py-1 text-center">
+                    {isRealItem && item.quantity > 0 ? item.quantity : ''}
+                  </td>
+                  <td className="border border-black px-1 py-1 text-center">
+                    {isRealItem ? (item.unit || '') : ''}
+                  </td>
+                  <td className="border border-black px-2 py-1 text-right">
+                    {isRealItem && item.unitPrice > 0 ? formatNumber(item.unitPrice) : ''}
+                  </td>
+                  <td className="border border-black px-2 py-1 text-right">
+                    {isRealItem && itemSubtotal > 0 ? formatNumber(itemSubtotal) : ''}
+                  </td>
+                  <td className="border border-black px-2 py-1">
+                    {/* Notes column - can be used for tax rate indication */}
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* Tax Row */}
+            <tr>
+              <td className="border border-black px-1 py-1 text-center">
+                {TOTAL_ROWS + 1}
+              </td>
+              <td className="border border-black px-2 py-1 text-center">
+                消費税10%
+              </td>
+              <td className="border border-black px-1 py-1"></td>
+              <td className="border border-black px-1 py-1"></td>
+              <td className="border border-black px-2 py-1"></td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatNumber(taxAmount)}
+              </td>
+              <td className="border border-black px-2 py-1"></td>
+            </tr>
+
+            {/* Total Row */}
+            <tr className="bg-gray-100 font-bold">
+              <td className="border border-black px-1 py-1 text-center">計</td>
+              <td className="border border-black px-2 py-1"></td>
+              <td className="border border-black px-1 py-1"></td>
+              <td className="border border-black px-1 py-1"></td>
+              <td className="border border-black px-2 py-1"></td>
+              <td className="border border-black px-2 py-1 text-right">
+                {formatNumber(document.total)}
+              </td>
+              <td className="border border-black px-2 py-1"></td>
+            </tr>
           </tbody>
         </table>
 
-        {/* Totals */}
-        <div className="flex justify-end mb-8">
-          <div className="w-64 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">小計</span>
-              <span className="text-gray-900">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">消費税</span>
-              <span className="text-gray-900">{formatCurrency(taxAmount)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t-2 border-gray-900">
-              <span className="text-gray-900">合計</span>
-              <span className="text-gray-900">{formatCurrency(document.total)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Info (for invoices) */}
-        {document.type === 'invoice' && companyInfo.bankName && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-8">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">お振込先</h3>
-            <p className="text-sm text-gray-600">
-              {companyInfo.bankName} {companyInfo.bankBranch}
-            </p>
-            <p className="text-sm text-gray-600">
-              {companyInfo.accountType} {companyInfo.accountNumber}
-            </p>
-            <p className="text-sm text-gray-600">
-              口座名義: {companyInfo.accountName}
-            </p>
+        {/* Due Date (for invoices) */}
+        {document.type === 'invoice' && 'dueDate' in document && (
+          <div className="text-xs mt-2">
+            <p>お支払期限: {formatDate(document.dueDate, 'long')}</p>
           </div>
         )}
 
-        {/* Receipt specific: Payment method */}
-        {document.type === 'receipt' && 'paymentMethod' in document && document.paymentMethod && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-8">
-            <p className="text-sm text-gray-600">
-              お支払方法: {document.paymentMethod}
-            </p>
+        {/* Quotation validity */}
+        {document.type === 'quotation' && 'validUntil' in document && document.validUntil && (
+          <div className="text-xs mt-2">
+            <p>見積有効期限: {formatDate(document.validUntil, 'long')}</p>
           </div>
         )}
 
-        {/* Notes */}
-        {document.notes && (
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">備考</h3>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{document.notes}</p>
+        {/* Additional Notes (excluding first line which is used as subject) */}
+        {document.notes && document.notes.split('\n').length > 1 && (
+          <div className="text-xs mt-4 border-t border-gray-300 pt-2">
+            <p className="font-semibold mb-1">備考</p>
+            <p className="whitespace-pre-wrap">{document.notes.split('\n').slice(1).join('\n')}</p>
           </div>
         )}
-
-        {/* Footer */}
-        <div className="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
-          この書類は請求書管理アプリで作成されました
-        </div>
       </div>
     );
   }

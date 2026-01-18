@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { formatCurrency, formatDate } from '../utils/format';
-import { Card, Badge, Button, EmptyState } from '../components/common';
+import { Card, Badge, Button, EmptyState, Select } from '../components/common';
 import type { ExpenseReportStatus } from '../types';
 import { EXPENSE_REPORT_STATUS_LABELS } from '../types';
 
@@ -10,14 +10,28 @@ export function Expenses() {
   const navigate = useNavigate();
   const { expenseReports, customers } = useApp();
   const [statusFilter, setStatusFilter] = useState<ExpenseReportStatus | 'all'>('all');
+  const [customerFilter, setCustomerFilter] = useState<string>('all');
+
+  // 経費レポートに紐づいている顧客のみを抽出
+  const customersWithExpenses = useMemo(() => {
+    const customerIds = new Set(expenseReports.map((r) => r.customerId).filter(Boolean));
+    return customers.filter((c) => customerIds.has(c.id));
+  }, [expenseReports, customers]);
 
   const filteredReports = useMemo(() => {
     let reports = [...expenseReports];
     if (statusFilter !== 'all') {
       reports = reports.filter((r) => r.status === statusFilter);
     }
+    if (customerFilter !== 'all') {
+      if (customerFilter === 'none') {
+        reports = reports.filter((r) => !r.customerId);
+      } else {
+        reports = reports.filter((r) => r.customerId === customerFilter);
+      }
+    }
     return reports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [expenseReports, statusFilter]);
+  }, [expenseReports, statusFilter, customerFilter]);
 
   const getCustomerName = (customerId?: string) => {
     if (!customerId) return '未設定';
@@ -38,18 +52,38 @@ export function Expenses() {
     }
   };
 
+  // フィルター対象のレポートで統計を計算
   const totalStats = useMemo(() => {
-    const draft = expenseReports.filter((r) => r.status === 'draft').length;
-    const completed = expenseReports.filter((r) => r.status === 'completed').length;
-    const invoiced = expenseReports.filter((r) => r.status === 'invoiced').length;
-    const totalRMB = expenseReports
+    // 顧客フィルターを適用したレポート
+    let targetReports = [...expenseReports];
+    if (customerFilter !== 'all') {
+      if (customerFilter === 'none') {
+        targetReports = targetReports.filter((r) => !r.customerId);
+      } else {
+        targetReports = targetReports.filter((r) => r.customerId === customerFilter);
+      }
+    }
+
+    const draft = targetReports.filter((r) => r.status === 'draft').length;
+    const completed = targetReports.filter((r) => r.status === 'completed').length;
+    const invoiced = targetReports.filter((r) => r.status === 'invoiced').length;
+    const totalRMB = targetReports
       .filter((r) => r.status !== 'invoiced')
       .reduce((sum, r) => sum + r.totalRMB, 0);
-    const totalJPY = expenseReports
+    const totalJPY = targetReports
       .filter((r) => r.status !== 'invoiced')
       .reduce((sum, r) => sum + r.totalJPY, 0);
     return { draft, completed, invoiced, totalRMB, totalJPY };
-  }, [expenseReports]);
+  }, [expenseReports, customerFilter]);
+
+  const customerOptions = useMemo(() => [
+    { value: 'all', label: 'すべての顧客' },
+    { value: 'none', label: '顧客未設定' },
+    ...customersWithExpenses.map((c) => ({
+      value: c.id,
+      label: c.companyName || c.name,
+    })),
+  ], [customersWithExpenses]);
 
   return (
     <div className="space-y-6">
@@ -88,20 +122,36 @@ export function Expenses() {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-2 flex-wrap">
-        {(['all', 'draft', 'completed', 'invoiced'] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              statusFilter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            {status === 'all' ? 'すべて' : EXPENSE_REPORT_STATUS_LABELS[status]}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Customer Filter */}
+        <div className="w-full sm:w-64">
+          <Select
+            label="顧客で絞り込み"
+            value={customerFilter}
+            onChange={(value) => setCustomerFilter(value)}
+            options={customerOptions}
+          />
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ステータス</p>
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'draft', 'completed', 'invoiced'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  statusFilter === status
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {status === 'all' ? 'すべて' : EXPENSE_REPORT_STATUS_LABELS[status]}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Report List */}

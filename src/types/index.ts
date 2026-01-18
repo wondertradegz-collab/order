@@ -25,6 +25,10 @@ export interface LineItem {
   unit?: string; // 単位（個、式、時間など）
   unitPrice: number;
   taxRate: number; // 消費税率 (10 = 10%)
+  // 外貨計算用（例：中国元での立替を円に換算）
+  foreignAmount?: number; // 外貨金額
+  exchangeRate?: number; // 為替レート（例：23.08円/元）
+  foreignCurrency?: string; // 通貨コード（例：CNY, USD）
 }
 
 // 商品マスタ

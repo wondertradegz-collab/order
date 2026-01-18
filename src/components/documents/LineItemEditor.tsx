@@ -11,8 +11,18 @@ interface LineItemEditorProps {
   products?: Product[];
 }
 
+const CURRENCY_OPTIONS = [
+  { code: 'CNY', symbol: '元', name: '中国人民元' },
+  { code: 'USD', symbol: '$', name: '米ドル' },
+  { code: 'EUR', symbol: '€', name: 'ユーロ' },
+  { code: 'GBP', symbol: '£', name: '英ポンド' },
+  { code: 'KRW', symbol: '₩', name: '韓国ウォン' },
+  { code: 'TWD', symbol: 'NT$', name: '台湾ドル' },
+];
+
 export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] }: LineItemEditorProps) {
   const [showProductSelector, setShowProductSelector] = useState<string | null>(null);
+  const [foreignCurrencyMode, setForeignCurrencyMode] = useState<Set<string>>(new Set());
 
   const addItem = () => {
     onChange([
@@ -25,6 +35,24 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
         taxRate: defaultTaxRate,
       },
     ]);
+  };
+
+  const addForeignCurrencyItem = () => {
+    const newId = uuidv4();
+    onChange([
+      ...items,
+      {
+        id: newId,
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        taxRate: defaultTaxRate,
+        foreignAmount: 0,
+        exchangeRate: 0,
+        foreignCurrency: 'CNY',
+      },
+    ]);
+    setForeignCurrencyMode(new Set([...foreignCurrencyMode, newId]));
   };
 
   const addFromProduct = (product: Product) => {
@@ -44,14 +72,56 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
     onChange(
-      items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
+      items.map((item) => {
+        if (item.id !== id) return item;
+
+        const updatedItem = { ...item, [field]: value };
+
+        // Auto-calculate unitPrice when foreign currency fields are updated
+        if (field === 'foreignAmount' || field === 'exchangeRate') {
+          const foreignAmount = field === 'foreignAmount' ? (value as number) : (item.foreignAmount || 0);
+          const exchangeRate = field === 'exchangeRate' ? (value as number) : (item.exchangeRate || 0);
+          if (foreignAmount > 0 && exchangeRate > 0) {
+            updatedItem.unitPrice = Math.round(foreignAmount * exchangeRate);
+          }
+        }
+
+        return updatedItem;
+      })
     );
   };
 
   const removeItem = (id: string) => {
     onChange(items.filter((item) => item.id !== id));
+    const newMode = new Set(foreignCurrencyMode);
+    newMode.delete(id);
+    setForeignCurrencyMode(newMode);
+  };
+
+  const toggleForeignCurrency = (id: string) => {
+    const newMode = new Set(foreignCurrencyMode);
+    if (newMode.has(id)) {
+      newMode.delete(id);
+      // Clear foreign currency fields
+      onChange(
+        items.map((item) =>
+          item.id === id
+            ? { ...item, foreignAmount: undefined, exchangeRate: undefined, foreignCurrency: undefined }
+            : item
+        )
+      );
+    } else {
+      newMode.add(id);
+      // Initialize foreign currency fields
+      onChange(
+        items.map((item) =>
+          item.id === id
+            ? { ...item, foreignAmount: 0, exchangeRate: 0, foreignCurrency: 'CNY' }
+            : item
+        )
+      );
+    }
+    setForeignCurrencyMode(newMode);
   };
 
   const calculateItemTotal = (item: LineItem) => {
@@ -59,6 +129,29 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
     const tax = Math.floor(subtotal * (item.taxRate / 100));
     return subtotal + tax;
   };
+
+  const getCurrencySymbol = (code?: string) => {
+    const currency = CURRENCY_OPTIONS.find((c) => c.code === code);
+    return currency?.symbol || code || '';
+  };
+
+  // Check if item has foreign currency data (either in mode or has existing data)
+  const hasForeignCurrency = (item: LineItem) => {
+    return foreignCurrencyMode.has(item.id) || (item.foreignAmount !== undefined && item.foreignAmount > 0);
+  };
+
+  // Initialize foreignCurrencyMode for items that already have foreign currency data
+  useState(() => {
+    const initialMode = new Set<string>();
+    items.forEach((item) => {
+      if (item.foreignAmount !== undefined && item.foreignAmount > 0) {
+        initialMode.add(item.id);
+      }
+    });
+    if (initialMode.size > 0) {
+      setForeignCurrencyMode(initialMode);
+    }
+  });
 
   return (
     <div className="space-y-4">
@@ -79,21 +172,90 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
             <div className="md:hidden space-y-3">
               <div className="flex items-start justify-between">
                 <span className="text-sm text-gray-500">明細 {index + 1}</span>
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="p-1 text-gray-400 hover:text-red-600"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleForeignCurrency(item.id)}
+                    className={`p-1 rounded transition-colors ${
+                      hasForeignCurrency(item)
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-gray-400 hover:text-green-600'
+                    }`}
+                    title="外貨換算"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <Input
                 placeholder="品名・摘要"
                 value={item.description}
                 onChange={(e) => updateItem(item.id, 'description', e.target.value)}
               />
+
+              {/* Foreign Currency Fields - Mobile */}
+              {hasForeignCurrency(item) && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                  <div className="text-xs font-medium text-green-700 mb-2">外貨換算</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">通貨</label>
+                      <select
+                        value={item.foreignCurrency || 'CNY'}
+                        onChange={(e) => updateItem(item.id, 'foreignCurrency', e.target.value)}
+                        className="w-full px-2 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        {CURRENCY_OPTIONS.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.symbol} {c.code}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">金額</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.foreignAmount || ''}
+                        onChange={(e) => updateItem(item.id, 'foreignAmount', parseFloat(e.target.value) || 0)}
+                        placeholder="580.4"
+                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">レート(円)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.exchangeRate || ''}
+                        onChange={(e) => updateItem(item.id, 'exchangeRate', parseFloat(e.target.value) || 0)}
+                        placeholder="23.08"
+                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                  {item.foreignAmount && item.exchangeRate && (
+                    <div className="text-xs text-green-600 text-right">
+                      = {formatCurrency(Math.round(item.foreignAmount * item.exchangeRate))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">数量</label>
@@ -114,7 +276,10 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
                     step="1"
                     value={item.unitPrice}
                     onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-2 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      hasForeignCurrency(item) ? 'bg-gray-100' : ''
+                    }`}
+                    readOnly={hasForeignCurrency(item) && item.foreignAmount !== undefined && item.foreignAmount > 0}
                   />
                 </div>
                 <div>
@@ -137,61 +302,128 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:grid md:grid-cols-12 gap-2 items-center">
-              <div className="col-span-5">
-                <input
-                  type="text"
-                  placeholder="品名・摘要"
-                  value={item.description}
-                  onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className="hidden md:block space-y-2">
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-5 flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="品名・摘要"
+                    value={item.description}
+                    onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleForeignCurrency(item.id)}
+                    className={`px-2 rounded-lg border transition-colors ${
+                      hasForeignCurrency(item)
+                        ? 'text-green-600 bg-green-50 border-green-300'
+                        : 'text-gray-400 border-gray-300 hover:text-green-600 hover:border-green-300'
+                    }`}
+                    title="外貨換算"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={item.unitPrice}
+                    onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      hasForeignCurrency(item) && item.foreignAmount ? 'bg-gray-100' : ''
+                    }`}
+                    readOnly={hasForeignCurrency(item) && item.foreignAmount !== undefined && item.foreignAmount > 0}
+                  />
+                </div>
+                <div className="col-span-1">
+                  <select
+                    value={item.taxRate}
+                    onChange={(e) => updateItem(item.id, 'taxRate', parseInt(e.target.value))}
+                    className="w-full px-2 py-2 border border-gray-300 rounded-lg bg-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={10}>10%</option>
+                    <option value={8}>8%</option>
+                    <option value={0}>0%</option>
+                  </select>
+                </div>
+                <div className="col-span-1 text-right font-medium text-gray-900">
+                  {formatCurrency(calculateItemTotal(item))}
+                </div>
+                <div className="col-span-1 text-right">
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="col-span-2">
-                <input
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  value={item.quantity}
-                  onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={item.unitPrice}
-                  onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="col-span-1">
-                <select
-                  value={item.taxRate}
-                  onChange={(e) => updateItem(item.id, 'taxRate', parseInt(e.target.value))}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg bg-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={10}>10%</option>
-                  <option value={8}>8%</option>
-                  <option value={0}>0%</option>
-                </select>
-              </div>
-              <div className="col-span-1 text-right font-medium text-gray-900">
-                {formatCurrency(calculateItemTotal(item))}
-              </div>
-              <div className="col-span-1 text-right">
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
+
+              {/* Foreign Currency Fields - Desktop */}
+              {hasForeignCurrency(item) && (
+                <div className="ml-0 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-green-700">外貨換算:</span>
+                    <select
+                      value={item.foreignCurrency || 'CNY'}
+                      onChange={(e) => updateItem(item.id, 'foreignCurrency', e.target.value)}
+                      className="px-2 py-1 border border-green-300 rounded bg-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      {CURRENCY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.symbol} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.foreignAmount || ''}
+                        onChange={(e) => updateItem(item.id, 'foreignAmount', parseFloat(e.target.value) || 0)}
+                        placeholder="金額"
+                        className="w-28 px-2 py-1 border border-green-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <span className="text-green-700">{getCurrencySymbol(item.foreignCurrency)}</span>
+                      <span className="text-green-700">×</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.exchangeRate || ''}
+                        onChange={(e) => updateItem(item.id, 'exchangeRate', parseFloat(e.target.value) || 0)}
+                        placeholder="レート"
+                        className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <span className="text-green-700">円</span>
+                    </div>
+                    {item.foreignAmount && item.exchangeRate && (
+                      <span className="text-sm font-medium text-green-700">
+                        = {formatCurrency(Math.round(item.foreignAmount * item.exchangeRate))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -209,12 +441,22 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [] 
           </svg>
           明細を追加
         </button>
+        <button
+          type="button"
+          onClick={addForeignCurrencyItem}
+          className="flex-1 py-3 border-2 border-dashed border-green-300 rounded-lg text-green-600 hover:border-green-400 hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          外貨立替を追加
+        </button>
         {products.length > 0 && (
           <div className="relative flex-1">
             <button
               type="button"
               onClick={() => setShowProductSelector(showProductSelector ? null : 'open')}
-              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />

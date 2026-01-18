@@ -1,12 +1,31 @@
 import { forwardRef } from 'react';
 import { formatCurrency, formatDate, getDocumentTypeLabel } from '../../utils/format';
-import type { Document, Customer, CompanyInfo } from '../../types';
+import type { Document, Customer, CompanyInfo, LineItem } from '../../types';
 
 interface DocumentPreviewProps {
   document: Document;
   customer: Customer | undefined;
   companyInfo: CompanyInfo;
 }
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  CNY: '元',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  KRW: '₩',
+  TWD: 'NT$',
+};
+
+const formatItemDescription = (item: LineItem): string => {
+  let desc = item.description || '-';
+  // Add foreign currency calculation if present
+  if (item.foreignAmount && item.exchangeRate && item.foreignCurrency) {
+    const symbol = CURRENCY_SYMBOLS[item.foreignCurrency] || item.foreignCurrency;
+    desc += ` (${item.foreignAmount}${symbol} × ${item.exchangeRate}円)`;
+  }
+  return desc;
+};
 
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ document, customer, companyInfo }, ref) => {
@@ -102,8 +121,11 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
           <tbody>
             {document.items.map((item) => (
               <tr key={item.id} className="border-b border-gray-200">
-                <td className="py-3 text-sm text-gray-900">{item.description || '-'}</td>
-                <td className="py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
+                <td className="py-3 text-sm text-gray-900">{formatItemDescription(item)}</td>
+                <td className="py-3 text-sm text-gray-900 text-right">
+                  {item.quantity}
+                  {item.unit && <span className="text-gray-500 ml-1">{item.unit}</span>}
+                </td>
                 <td className="py-3 text-sm text-gray-900 text-right">{formatCurrency(item.unitPrice)}</td>
                 <td className="py-3 text-sm text-gray-900 text-right">{item.taxRate}%</td>
                 <td className="py-3 text-sm text-gray-900 text-right">

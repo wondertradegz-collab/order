@@ -7,3 +7,6 @@ export { DocumentEditor } from './DocumentEditor';
 export { Settings } from './Settings';
 export { Products } from './Products';
 export { Reports } from './Reports';
+export { Expenses } from './Expenses';
+export { ExpenseEditor } from './ExpenseEditor';
+export { ExpenseDetail } from './ExpenseDetail';

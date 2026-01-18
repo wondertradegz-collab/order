@@ -12,6 +12,9 @@ import {
   Settings,
   Products,
   Reports,
+  Expenses,
+  ExpenseEditor,
+  ExpenseDetail,
 } from './pages';
 
 function App() {
@@ -37,6 +40,10 @@ function App() {
               <Route path="/receipts/:id" element={<DocumentDetail type="receipt" />} />
               <Route path="/receipts/:id/edit" element={<DocumentEditor type="receipt" mode="edit" />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/expenses/new" element={<ExpenseEditor mode="create" />} />
+              <Route path="/expenses/:id" element={<ExpenseDetail />} />
+              <Route path="/expenses/:id/edit" element={<ExpenseEditor mode="edit" />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

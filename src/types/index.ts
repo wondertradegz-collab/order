@@ -214,3 +214,56 @@ export interface DashboardStats {
   thisMonthSales: number;
   overdueInvoices: number;
 }
+
+// 経費項目（個別の経費）
+export interface ExpenseItem {
+  id: string;
+  date: string; // 日付
+  amountRMB: number; // 金額（RMB）
+  description?: string; // 説明・メモ（例：タクシー、昼食など）
+  category?: ExpenseCategory; // カテゴリー
+  screenshot?: string; // スクリーンショット（base64）
+}
+
+// 経費カテゴリー
+export type ExpenseCategory =
+  | 'transportation' // 交通費
+  | 'accommodation' // 宿泊費
+  | 'meals' // 食費
+  | 'communication' // 通信費
+  | 'supplies' // 消耗品
+  | 'other'; // その他
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  transportation: '交通費',
+  accommodation: '宿泊費',
+  meals: '食費',
+  communication: '通信費',
+  supplies: '消耗品',
+  other: 'その他',
+};
+
+// 経費レポート（経費をまとめたもの）
+export interface ExpenseReport {
+  id: string;
+  name: string; // レポート名（例：「2024/01 出張費」）
+  customerId?: string; // 請求先顧客（顧客に請求する場合）
+  expenses: ExpenseItem[]; // 経費項目のリスト
+  totalRMB: number; // 合計金額（RMB）
+  exchangeRate: number; // 為替レート（円/元）
+  totalJPY: number; // 合計金額（JPY）
+  status: ExpenseReportStatus;
+  invoiceId?: string; // 請求書に追加した場合のID
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 経費レポートのステータス
+export type ExpenseReportStatus = 'draft' | 'completed' | 'invoiced';
+
+export const EXPENSE_REPORT_STATUS_LABELS: Record<ExpenseReportStatus, string> = {
+  draft: '作成中',
+  completed: '確定',
+  invoiced: '請求済み',
+};

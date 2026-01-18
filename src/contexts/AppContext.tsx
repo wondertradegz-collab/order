@@ -15,6 +15,7 @@ import type {
   ElectronicStamp,
   DocumentTemplate,
   ItemSet,
+  ExpenseReport,
 } from '../types';
 
 // デフォルト設定
@@ -103,6 +104,14 @@ interface AppContextType {
   updateItemSet: (id: string, itemSet: Partial<ItemSet>) => void;
   deleteItemSet: (id: string) => void;
 
+  // 経費レポート
+  expenseReports: ExpenseReport[];
+  addExpenseReport: (report: Omit<ExpenseReport, 'id' | 'createdAt' | 'updatedAt'>) => ExpenseReport;
+  updateExpenseReport: (id: string, report: Partial<ExpenseReport>) => void;
+  deleteExpenseReport: (id: string) => void;
+  getExpenseReport: (id: string) => ExpenseReport | undefined;
+  addExpenseToInvoice: (reportId: string, invoiceId: string, description: string) => LineItem | null;
+
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
@@ -118,6 +127,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useLocalStorage<AppSettings>('invoice-app-settings', defaultSettings);
   const [templates, setTemplates] = useLocalStorage<DocumentTemplate[]>('invoice-app-templates', []);
   const [itemSets, setItemSets] = useLocalStorage<ItemSet[]>('invoice-app-itemsets', []);
+  const [expenseReports, setExpenseReports] = useLocalStorage<ExpenseReport[]>('invoice-app-expense-reports', []);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -490,6 +500,83 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setItemSets((prev) => prev.filter((s) => s.id !== id));
   }, [setItemSets]);
 
+  // 経費レポート操作
+  const addExpenseReport = useCallback((report: Omit<ExpenseReport, 'id' | 'createdAt' | 'updatedAt'>): ExpenseReport => {
+    const now = new Date().toISOString();
+    const newReport: ExpenseReport = {
+      ...report,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setExpenseReports((prev) => [...prev, newReport]);
+    return newReport;
+  }, [setExpenseReports]);
+
+  const updateExpenseReport = useCallback((id: string, report: Partial<ExpenseReport>) => {
+    setExpenseReports((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, ...report, updatedAt: new Date().toISOString() } : r
+      )
+    );
+  }, [setExpenseReports]);
+
+  const deleteExpenseReport = useCallback((id: string) => {
+    setExpenseReports((prev) => prev.filter((r) => r.id !== id));
+  }, [setExpenseReports]);
+
+  const getExpenseReport = useCallback((id: string) => {
+    return expenseReports.find((r) => r.id === id);
+  }, [expenseReports]);
+
+  // 経費レポートを請求書の明細に追加
+  const addExpenseToInvoice = useCallback((reportId: string, invoiceId: string, description: string): LineItem | null => {
+    const report = expenseReports.find((r) => r.id === reportId);
+    if (!report) return null;
+
+    // 明細行を作成（例：「出張費 / 645元 × 22.1円」）
+    const newLineItem: LineItem = {
+      id: uuidv4(),
+      description: description || `経費精算 (${report.totalRMB}元 × ${report.exchangeRate}円)`,
+      quantity: 1,
+      unit: '式',
+      unitPrice: report.totalJPY,
+      taxRate: 0, // 経費は通常非課税
+      taxCategory: 'non_taxable',
+      foreignAmount: report.totalRMB,
+      exchangeRate: report.exchangeRate,
+      foreignCurrency: 'CNY',
+      calculationNote: `(${report.totalRMB}元 × ${report.exchangeRate}円)`,
+    };
+
+    // 請求書を更新
+    setDocuments((prev) =>
+      prev.map((d) => {
+        if (d.id !== invoiceId || d.type !== 'invoice') return d;
+        const invoice = d as Invoice;
+        const updatedItems = [...invoice.items, newLineItem];
+        const totals = calculateTotals(updatedItems);
+        return {
+          ...invoice,
+          items: updatedItems,
+          ...totals,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    // 経費レポートのステータスを更新
+    setExpenseReports((prev) =>
+      prev.map((r) =>
+        r.id === reportId
+          ? { ...r, status: 'invoiced' as const, invoiceId, updatedAt: new Date().toISOString() }
+          : r
+      )
+    );
+
+    return newLineItem;
+  }, [expenseReports, setDocuments, setExpenseReports, calculateTotals]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -528,6 +615,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addItemSet,
     updateItemSet,
     deleteItemSet,
+    expenseReports,
+    addExpenseReport,
+    updateExpenseReport,
+    deleteExpenseReport,
+    getExpenseReport,
+    addExpenseToInvoice,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -568,6 +661,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addItemSet,
     updateItemSet,
     deleteItemSet,
+    expenseReports,
+    addExpenseReport,
+    updateExpenseReport,
+    deleteExpenseReport,
+    getExpenseReport,
+    addExpenseToInvoice,
     generateDocumentNumber,
     calculateTotals,
   ]);

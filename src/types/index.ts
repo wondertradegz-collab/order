@@ -13,6 +13,18 @@ export const ROUNDING_METHOD_LABELS: Record<RoundingMethod, string> = {
   ceil: '切り上げ',
 };
 
+// 明細項目のカテゴリ（売上/立替経費/値引き）
+// ビジネス視点：売上と立替経費を区別することで正確な収益把握
+// 会計視点：適切な勘定科目への分類が可能
+// ユーザー視点：請求書内の項目の性質を明確化
+export type ItemCategory = 'revenue' | 'expense_reimbursement' | 'discount';
+
+export const ITEM_CATEGORY_LABELS: Record<ItemCategory, string> = {
+  revenue: '売上',
+  expense_reimbursement: '立替経費',
+  discount: '値引き',
+};
+
 // 顧客
 export interface Customer {
   id: string;
@@ -41,6 +53,8 @@ export interface LineItem {
   unitPrice: number;
   taxRate: number; // 消費税率 (10 = 10%)
   taxCategory?: TaxCategory; // 税区分（課税/非課税/不課税）
+  // 項目カテゴリ（売上/立替経費/値引き）- デフォルトは売上
+  category?: ItemCategory;
   // 外貨計算用（例：中国元での立替を円に換算）
   foreignAmount?: number; // 外貨金額
   exchangeRate?: number; // 為替レート（例：23.08円/元）
@@ -165,6 +179,8 @@ export interface ItemSetItem {
   taxRate: number;
   // 税区分
   taxCategory?: TaxCategory;
+  // 項目カテゴリ
+  category?: ItemCategory;
 }
 
 export interface ItemSet {

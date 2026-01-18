@@ -107,6 +107,9 @@ export const translations = {
     title: { ja: 'ダッシュボード', zh: '仪表板', en: 'Dashboard' },
     subtitle: { ja: '売上状況と最新の書類を確認できます', zh: '查看销售情况和最新文档', en: 'View sales status and latest documents' },
     monthlySales: { ja: '今月の売上', zh: '本月销售额', en: 'Monthly Sales' },
+    pureRevenue: { ja: '純売上', zh: '纯销售额', en: 'Net Revenue' },
+    expenseReimbursement: { ja: '立替経費回収', zh: '代垫费用回收', en: 'Expense Reimbursement' },
+    monthlyPureRevenue: { ja: '今月の純売上', zh: '本月纯销售额', en: 'Monthly Net Revenue' },
     unpaid: { ja: '未入金', zh: '未付款', en: 'Unpaid' },
     overdue: { ja: '期限超過', zh: '已逾期', en: 'Overdue' },
     customerCount: { ja: '顧客数', zh: '客户数', en: 'Customers' },
@@ -156,6 +159,11 @@ export const translations = {
     deleteConfirm: { ja: 'を削除しますか？この操作は取り消せません。', zh: '确定要删除吗？此操作无法撤销。', en: 'Are you sure you want to delete? This cannot be undone.' },
     noDocuments: { ja: '書類がありません', zh: '没有文档', en: 'No documents' },
     createFirst: { ja: '最初の書類を作成しましょう', zh: '创建您的第一个文档', en: 'Create your first document' },
+    // Line Item Categories
+    itemCategory: { ja: '項目区分', zh: '项目类别', en: 'Item Category' },
+    categoryRevenue: { ja: '売上', zh: '销售收入', en: 'Revenue' },
+    categoryExpenseReimbursement: { ja: '立替経費', zh: '代垫费用', en: 'Expense Reimbursement' },
+    categoryDiscount: { ja: '値引き', zh: '折扣', en: 'Discount' },
   },
 
   // Document Status
@@ -249,11 +257,18 @@ export const translations = {
     startDate: { ja: '開始日', zh: '开始日期', en: 'Start Date' },
     endDate: { ja: '終了日', zh: '结束日期', en: 'End Date' },
     revenue: { ja: '売上', zh: '销售额', en: 'Revenue' },
+    pureRevenue: { ja: '純売上', zh: '纯销售额', en: 'Net Revenue' },
+    expenseReimbursement: { ja: '立替経費回収', zh: '代垫费用回收', en: 'Expense Reimbursement' },
+    discount: { ja: '値引き', zh: '折扣', en: 'Discount' },
+    receiptTotal: { ja: '領収書合計', zh: '收据合计', en: 'Receipt Total' },
+    categoryBreakdown: { ja: 'カテゴリ別内訳', zh: '分类明细', en: 'Category Breakdown' },
+    pureRevenueNote: { ja: '立替経費は回収額であり、純売上には含まれません', zh: '代垫费用为回收金额，不计入纯销售额', en: 'Expense reimbursements are recovered amounts and not included in net revenue' },
     invoiced: { ja: '請求額', zh: '开票金额', en: 'Invoiced' },
     collected: { ja: '入金額', zh: '收款金额', en: 'Collected' },
     outstanding: { ja: '未入金', zh: '未付款', en: 'Outstanding' },
     monthlyGoal: { ja: '月間目標', zh: '月度目标', en: 'Monthly Goal' },
     progress: { ja: '進捗', zh: '进度', en: 'Progress' },
+    goalProgressNote: { ja: '目標進捗は純売上のみで計算されます', zh: '目标进度仅按纯销售额计算', en: 'Goal progress is calculated from net revenue only' },
   },
 
   // Manual

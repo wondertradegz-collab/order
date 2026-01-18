@@ -3,7 +3,42 @@ import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Button, Select, Input, DateInput } from '../components/common';
-import type { Invoice, Receipt } from '../types';
+import type { Invoice, Receipt, LineItem } from '../types';
+
+// カテゴリ別の金額計算ヘルパー
+function calculateCategoryTotals(items: LineItem[]) {
+  const revenue = items
+    .filter((item) => !item.category || item.category === 'revenue')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  const expenseReimbursement = items
+    .filter((item) => item.category === 'expense_reimbursement')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  const discount = items
+    .filter((item) => item.category === 'discount')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  return {
+    revenue,
+    expenseReimbursement,
+    discount,
+    netRevenue: revenue - discount,
+    total: revenue + expenseReimbursement - discount,
+  };
+}
 
 type TabType = 'overview' | 'aging' | 'cashflow' | 'products' | 'goals';
 
@@ -59,6 +94,32 @@ export function Reports() {
       return date >= start && date <= end;
     }) as Receipt[];
 
+    // カテゴリ別に集計（領収書）
+    const receiptTotals = receipts.reduce(
+      (acc, r) => {
+        const categoryTotals = calculateCategoryTotals(r.items);
+        acc.revenue += categoryTotals.revenue;
+        acc.expenseReimbursement += categoryTotals.expenseReimbursement;
+        acc.discount += categoryTotals.discount;
+        acc.total += categoryTotals.total;
+        return acc;
+      },
+      { revenue: 0, expenseReimbursement: 0, discount: 0, total: 0 }
+    );
+
+    // カテゴリ別に集計（請求書）
+    const invoiceTotals = invoices.reduce(
+      (acc, inv) => {
+        const categoryTotals = calculateCategoryTotals(inv.items);
+        acc.revenue += categoryTotals.revenue;
+        acc.expenseReimbursement += categoryTotals.expenseReimbursement;
+        acc.discount += categoryTotals.discount;
+        acc.total += categoryTotals.total;
+        return acc;
+      },
+      { revenue: 0, expenseReimbursement: 0, discount: 0, total: 0 }
+    );
+
     const totalSales = receipts.reduce((sum, r) => sum + r.total, 0);
     const totalInvoiced = invoices.reduce((sum, i) => sum + i.total, 0);
     const totalPaid = invoices.reduce((sum, i) => sum + i.paidAmount, 0);
@@ -66,20 +127,31 @@ export function Reports() {
       .filter((i) => i.status !== 'paid' && i.status !== 'cancelled')
       .reduce((sum, i) => sum + (i.total - i.paidAmount), 0);
 
+    // 顧客別売上（純売上のみ）
     const salesByCustomer = receipts.reduce((acc, r) => {
-      acc[r.customerId] = (acc[r.customerId] || 0) + r.total;
+      const categoryTotals = calculateCategoryTotals(r.items);
+      acc[r.customerId] = (acc[r.customerId] || 0) + categoryTotals.revenue - categoryTotals.discount;
       return acc;
     }, {} as Record<string, number>);
 
+    // 月別売上（カテゴリ別）
     const monthlySales = Array.from({ length: 12 }, (_, i) => {
       const monthStart = new Date(new Date().getFullYear(), i, 1);
       const monthEnd = new Date(new Date().getFullYear(), i + 1, 0);
-      return receipts
-        .filter((r) => {
-          const date = new Date(r.issueDate);
-          return date >= monthStart && date <= monthEnd;
-        })
-        .reduce((sum, r) => sum + r.total, 0);
+      const monthReceipts = receipts.filter((r) => {
+        const date = new Date(r.issueDate);
+        return date >= monthStart && date <= monthEnd;
+      });
+      return monthReceipts.reduce(
+        (acc, r) => {
+          const categoryTotals = calculateCategoryTotals(r.items);
+          acc.revenue += categoryTotals.revenue - categoryTotals.discount;
+          acc.expenseReimbursement += categoryTotals.expenseReimbursement;
+          acc.total += categoryTotals.total;
+          return acc;
+        },
+        { revenue: 0, expenseReimbursement: 0, total: 0 }
+      );
     });
 
     return {
@@ -91,6 +163,9 @@ export function Reports() {
       receiptCount: receipts.length,
       salesByCustomer,
       monthlySales,
+      // カテゴリ別集計
+      receiptTotals,
+      invoiceTotals,
     };
   }, [documents, dateRange]);
 
@@ -180,7 +255,7 @@ export function Reports() {
   // Product/item sales analysis
   const productSales = useMemo(() => {
     const { start, end } = dateRange;
-    const salesMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    const salesMap: Record<string, { name: string; quantity: number; revenue: number; category: string }> = {};
 
     // Analyze items from receipts (confirmed sales)
     const receipts = documents.filter((d) => {
@@ -191,9 +266,10 @@ export function Reports() {
 
     receipts.forEach((receipt) => {
       receipt.items.forEach((item) => {
-        const key = item.description || 'その他';
+        const category = item.category || 'revenue';
+        const key = `${item.description || 'その他'}__${category}`;
         if (!salesMap[key]) {
-          salesMap[key] = { name: key, quantity: 0, revenue: 0 };
+          salesMap[key] = { name: item.description || 'その他', quantity: 0, revenue: 0, category };
         }
         salesMap[key].quantity += item.quantity;
         salesMap[key].revenue += item.quantity * item.unitPrice;
@@ -205,7 +281,7 @@ export function Reports() {
       .slice(0, 15);
   }, [documents, dateRange]);
 
-  // Goal progress
+  // Goal progress - 純売上のみを使用（立替経費回収は含まない）
   const goalProgress = useMemo(() => {
     if (monthlyGoal <= 0) return 0;
     const now = new Date();
@@ -216,25 +292,43 @@ export function Reports() {
       if (d.type !== 'receipt') return false;
       const date = new Date(d.issueDate);
       return date >= monthStart && date <= monthEnd;
-    });
+    }) as Receipt[];
 
-    const monthSales = monthReceipts.reduce((sum, r) => sum + r.total, 0);
-    return Math.min((monthSales / monthlyGoal) * 100, 100);
+    // 純売上のみを計算（立替経費回収は含まない）
+    const monthPureRevenue = monthReceipts.reduce((sum, r) => {
+      const categoryTotals = calculateCategoryTotals(r.items);
+      return sum + categoryTotals.revenue - categoryTotals.discount;
+    }, 0);
+
+    return Math.min((monthPureRevenue / monthlyGoal) * 100, 100);
   }, [documents, monthlyGoal]);
 
-  const thisMonthSales = useMemo(() => {
+  // 今月の純売上と立替経費回収を分けて計算
+  const thisMonthData = useMemo(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    return documents
-      .filter((d) => {
-        if (d.type !== 'receipt') return false;
-        const date = new Date(d.issueDate);
-        return date >= monthStart && date <= monthEnd;
-      })
-      .reduce((sum, r) => sum + r.total, 0);
+    const monthReceipts = documents.filter((d) => {
+      if (d.type !== 'receipt') return false;
+      const date = new Date(d.issueDate);
+      return date >= monthStart && date <= monthEnd;
+    }) as Receipt[];
+
+    return monthReceipts.reduce(
+      (acc, r) => {
+        const categoryTotals = calculateCategoryTotals(r.items);
+        acc.pureRevenue += categoryTotals.revenue - categoryTotals.discount;
+        acc.expenseReimbursement += categoryTotals.expenseReimbursement;
+        acc.total += r.total;
+        return acc;
+      },
+      { pureRevenue: 0, expenseReimbursement: 0, total: 0 }
+    );
   }, [documents]);
+
+  // 後方互換性のため
+  const thisMonthSales = thisMonthData.pureRevenue;
 
   const getCustomerName = useCallback((customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
@@ -253,7 +347,7 @@ export function Reports() {
   }, [stats.salesByCustomer, getCustomerName]);
 
   const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-  const maxMonthlySales = Math.max(...stats.monthlySales, 1);
+  const maxMonthlySales = Math.max(...stats.monthlySales.map((m) => m.total), 1);
   const totalAging = agingData.current.amount + agingData.days30.amount + agingData.days60.amount + agingData.days90.amount + agingData.over90.amount;
 
   const tabs = [
@@ -336,16 +430,16 @@ export function Reports() {
             </p>
           </div>
 
-          {/* Summary Cards */}
+          {/* Summary Cards - Main */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">売上（領収書）</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.totalSales)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">純売上（領収書）</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.receiptTotals.revenue - stats.receiptTotals.discount)}</p>
               <p className="text-xs text-gray-400 mt-1">{stats.receiptCount}件</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">請求額</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(stats.totalInvoiced)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">純請求額</p>
+              <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(stats.invoiceTotals.revenue - stats.invoiceTotals.discount)}</p>
               <p className="text-xs text-gray-400 mt-1">{stats.invoiceCount}件</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
@@ -358,23 +452,73 @@ export function Reports() {
             </div>
           </div>
 
+          {/* Category Breakdown Cards */}
+          {(stats.receiptTotals.expenseReimbursement > 0 || stats.invoiceTotals.expenseReimbursement > 0) && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">カテゴリ別内訳</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-xs text-green-700 dark:text-green-400">売上（税込）</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(stats.receiptTotals.revenue)}</p>
+                </div>
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">立替経費回収</p>
+                  <p className="text-lg font-bold text-amber-600">{formatCurrency(stats.receiptTotals.expenseReimbursement)}</p>
+                </div>
+                {stats.receiptTotals.discount > 0 && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <p className="text-xs text-red-700 dark:text-red-400">値引き</p>
+                    <p className="text-lg font-bold text-red-600">-{formatCurrency(stats.receiptTotals.discount)}</p>
+                  </div>
+                )}
+                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-700 dark:text-gray-300">領収書合計</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalSales)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                立替経費は回収額であり、純売上には含まれません
+              </p>
+            </div>
+          )}
+
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Monthly Sales Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">月別売上（今年）</h2>
+              <div className="flex gap-4 mb-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span className="text-gray-600 dark:text-gray-400">売上</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-amber-500 rounded"></div>
+                  <span className="text-gray-600 dark:text-gray-400">立替経費</span>
+                </div>
+              </div>
               <div className="space-y-3">
-                {stats.monthlySales.map((amount, index) => (
+                {stats.monthlySales.map((monthData, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <span className="w-10 text-sm text-gray-500 dark:text-gray-400">{months[index]}</span>
-                    <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                      {/* Revenue bar (green) */}
                       <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ width: `${(amount / maxMonthlySales) * 100}%` }}
+                        className="h-full bg-green-500 transition-all duration-300"
+                        style={{ width: `${(monthData.revenue / maxMonthlySales) * 100}%` }}
+                        title={`売上: ${formatCurrency(monthData.revenue)}`}
                       />
+                      {/* Expense reimbursement bar (amber) */}
+                      {monthData.expenseReimbursement > 0 && (
+                        <div
+                          className="h-full bg-amber-500 transition-all duration-300"
+                          style={{ width: `${(monthData.expenseReimbursement / maxMonthlySales) * 100}%` }}
+                          title={`立替経費: ${formatCurrency(monthData.expenseReimbursement)}`}
+                        />
+                      )}
                     </div>
                     <span className="w-24 text-sm text-right font-medium text-gray-900 dark:text-white">
-                      {formatCurrency(amount)}
+                      {formatCurrency(monthData.total)}
                     </span>
                   </div>
                 ))}
@@ -411,11 +555,26 @@ export function Reports() {
               onClick={() => {
                 const csvData = [
                   ['期間', `${formatDate(dateRange.start)} - ${formatDate(dateRange.end)}`],
-                  ['売上合計', stats.totalSales],
-                  ['請求額合計', stats.totalInvoiced],
+                  [],
+                  ['■ カテゴリ別売上（領収書）'],
+                  ['売上（税込）', stats.receiptTotals.revenue],
+                  ['立替経費回収', stats.receiptTotals.expenseReimbursement],
+                  ['値引き', stats.receiptTotals.discount],
+                  ['純売上', stats.receiptTotals.revenue - stats.receiptTotals.discount],
+                  ['領収書合計', stats.totalSales],
+                  [],
+                  ['■ カテゴリ別請求（請求書）'],
+                  ['売上（税込）', stats.invoiceTotals.revenue],
+                  ['立替経費', stats.invoiceTotals.expenseReimbursement],
+                  ['値引き', stats.invoiceTotals.discount],
+                  ['純請求額', stats.invoiceTotals.revenue - stats.invoiceTotals.discount],
+                  ['請求書合計', stats.totalInvoiced],
+                  [],
+                  ['■ 入金状況'],
                   ['入金済み', stats.totalPaid],
                   ['未入金', stats.totalUnpaid],
                   [],
+                  ['■ 顧客別売上（純売上）'],
                   ['顧客名', '売上'],
                   ...topCustomers.map((c) => [c.name, c.amount]),
                 ];
@@ -580,6 +739,22 @@ export function Reports() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">商品・サービス別売上</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">期間内の領収書に基づく商品別の売上分析</p>
 
+            {/* Category Legend */}
+            <div className="flex gap-4 mb-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span className="text-gray-600 dark:text-gray-400">売上</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-amber-500 rounded"></div>
+                <span className="text-gray-600 dark:text-gray-400">立替経費</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded"></div>
+                <span className="text-gray-600 dark:text-gray-400">値引き</span>
+              </div>
+            </div>
+
             {productSales.length === 0 ? (
               <p className="text-gray-500 dark:text-gray-400 text-center py-8">データがありません</p>
             ) : (
@@ -589,15 +764,27 @@ export function Reports() {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">順位</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">商品名</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">区分</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">数量</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">売上</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">金額</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {productSales.map((item, index) => (
-                      <tr key={item.name}>
+                      <tr key={`${item.name}-${item.category}`}>
                         <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{index + 1}</td>
                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{item.name}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-block w-3 h-3 rounded ${
+                            item.category === 'revenue' ? 'bg-green-500' :
+                            item.category === 'expense_reimbursement' ? 'bg-amber-500' :
+                            'bg-red-500'
+                          }`} title={
+                            item.category === 'revenue' ? '売上' :
+                            item.category === 'expense_reimbursement' ? '立替経費' :
+                            '値引き'
+                          }></span>
+                        </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{item.quantity}</td>
                         <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">{formatCurrency(item.revenue)}</td>
                       </tr>
@@ -605,7 +792,7 @@ export function Reports() {
                   </tbody>
                   <tfoot className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <td colSpan={3} className="px-4 py-3 font-medium text-gray-900 dark:text-white">合計</td>
+                      <td colSpan={4} className="px-4 py-3 font-medium text-gray-900 dark:text-white">合計</td>
                       <td className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
                         {formatCurrency(productSales.reduce((sum, p) => sum + p.revenue, 0))}
                       </td>
@@ -682,9 +869,9 @@ export function Reports() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">今月の売上</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(thisMonthSales)}</p>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <p className="text-sm text-green-700 dark:text-green-400">今月の純売上</p>
+                    <p className="text-xl font-bold text-green-600">{formatCurrency(thisMonthSales)}</p>
                   </div>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <p className="text-sm text-gray-500 dark:text-gray-400">目標まで</p>
@@ -693,6 +880,30 @@ export function Reports() {
                     </p>
                   </div>
                 </div>
+
+                {/* Category Breakdown */}
+                {thisMonthData.expenseReimbursement > 0 && (
+                  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">今月の内訳</p>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-xs text-green-600 dark:text-green-400">純売上</p>
+                        <p className="font-bold text-green-600">{formatCurrency(thisMonthData.pureRevenue)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">立替経費回収</p>
+                        <p className="font-bold text-amber-600">{formatCurrency(thisMonthData.expenseReimbursement)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">領収書合計</p>
+                        <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(thisMonthData.total)}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                      目標進捗は純売上のみで計算されます
+                    </p>
+                  </div>
+                )}
 
                 {goalProgress >= 100 && (
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">

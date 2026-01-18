@@ -4,7 +4,42 @@ import { useApp } from '../contexts/AppContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Card, CardHeader, Badge, ChipGroup, Carousel, EmptyState } from '../components/common';
-import type { Invoice } from '../types';
+import type { Invoice, Receipt, LineItem } from '../types';
+
+// カテゴリ別の金額計算ヘルパー
+function calculateCategoryTotals(items: LineItem[]) {
+  const revenue = items
+    .filter((item) => !item.category || item.category === 'revenue')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  const expenseReimbursement = items
+    .filter((item) => item.category === 'expense_reimbursement')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  const discount = items
+    .filter((item) => item.category === 'discount')
+    .reduce((sum, item) => {
+      const subtotal = item.quantity * item.unitPrice;
+      const tax = Math.floor(subtotal * (item.taxRate / 100));
+      return sum + subtotal + tax;
+    }, 0);
+
+  return {
+    revenue,
+    expenseReimbursement,
+    discount,
+    netRevenue: revenue - discount,
+    total: revenue + expenseReimbursement - discount,
+  };
+}
 
 export function Dashboard() {
   const { documents, customers, memos, toggleMemoComplete } = useApp();
@@ -14,7 +49,7 @@ export function Dashboard() {
   const stats = useMemo(() => {
     const quotations = documents.filter((d) => d.type === 'quotation');
     const invoices = documents.filter((d) => d.type === 'invoice') as Invoice[];
-    const receipts = documents.filter((d) => d.type === 'receipt');
+    const receipts = documents.filter((d) => d.type === 'receipt') as Receipt[];
 
     const unpaidInvoices = invoices.filter((i) => i.status !== 'paid' && i.status !== 'cancelled');
     const unpaidAmount = unpaidInvoices.reduce((sum, i) => sum + (i.total - i.paidAmount), 0);
@@ -31,11 +66,30 @@ export function Dashboard() {
       const date = new Date(r.createdAt);
       return date >= lastMonth && date < thisMonth;
     });
-    const thisMonthSales = thisMonthReceipts.reduce((sum, r) => sum + r.total, 0);
-    const lastMonthSales = lastMonthReceipts.reduce((sum, r) => sum + r.total, 0);
-    const salesChange = lastMonthSales > 0 ? ((thisMonthSales - lastMonthSales) / lastMonthSales) * 100 : 0;
 
-    // Get weekly sales for trend
+    // カテゴリ別に今月の売上を計算
+    const thisMonthData = thisMonthReceipts.reduce(
+      (acc, r) => {
+        const categoryTotals = calculateCategoryTotals(r.items);
+        acc.pureRevenue += categoryTotals.netRevenue;
+        acc.expenseReimbursement += categoryTotals.expenseReimbursement;
+        acc.total += r.total;
+        return acc;
+      },
+      { pureRevenue: 0, expenseReimbursement: 0, total: 0 }
+    );
+
+    // 先月の純売上を計算（前月比較用）
+    const lastMonthPureRevenue = lastMonthReceipts.reduce((sum, r) => {
+      const categoryTotals = calculateCategoryTotals(r.items);
+      return sum + categoryTotals.netRevenue;
+    }, 0);
+
+    const salesChange = lastMonthPureRevenue > 0
+      ? ((thisMonthData.pureRevenue - lastMonthPureRevenue) / lastMonthPureRevenue) * 100
+      : 0;
+
+    // Get weekly sales for trend (純売上のみ)
     const weeklyTrend: number[] = [];
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(today.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
@@ -45,7 +99,10 @@ export function Dashboard() {
           const date = new Date(r.createdAt);
           return date >= weekStart && date < weekEnd;
         })
-        .reduce((sum, r) => sum + r.total, 0);
+        .reduce((sum, r) => {
+          const categoryTotals = calculateCategoryTotals(r.items);
+          return sum + categoryTotals.netRevenue;
+        }, 0);
       weeklyTrend.push(weekSales);
     }
 
@@ -56,7 +113,9 @@ export function Dashboard() {
       unpaidCount: unpaidInvoices.length,
       unpaidAmount,
       overdueCount: overdueInvoices.length,
-      thisMonthSales,
+      thisMonthSales: thisMonthData.pureRevenue, // 純売上のみ
+      thisMonthExpenseReimbursement: thisMonthData.expenseReimbursement, // 立替経費回収
+      thisMonthTotal: thisMonthData.total, // 領収書合計
       salesChange,
       weeklyTrend,
       totalCustomers: customers.length,
@@ -180,8 +239,8 @@ export function Dashboard() {
         <Card hover className="relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">今月の売上</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.thisMonthSales)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">今月の純売上</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.thisMonthSales)}</p>
               {stats.salesChange !== 0 && (
                 <div className={`flex items-center gap-1 mt-2 text-sm ${
                   stats.salesChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -195,6 +254,17 @@ export function Dashboard() {
                     />
                   </svg>
                   <span>{Math.abs(stats.salesChange).toFixed(1)}%</span>
+                </div>
+              )}
+              {/* 立替経費回収がある場合は内訳を表示 */}
+              {stats.thisMonthExpenseReimbursement > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    + 立替経費回収: {formatCurrency(stats.thisMonthExpenseReimbursement)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    = 合計: {formatCurrency(stats.thisMonthTotal)}
+                  </p>
                 </div>
               )}
             </div>

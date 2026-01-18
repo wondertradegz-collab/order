@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../common';
 import { useApp } from '../../contexts/AppContext';
 import { formatCurrency } from '../../utils/format';
-import type { LineItem, Product, ItemSet, Customer } from '../../types';
+import type { LineItem, Product, ItemSet, Customer, ItemCategory } from '../../types';
+import { ITEM_CATEGORY_LABELS } from '../../types';
 
 interface LineItemEditorProps {
   items: LineItem[];
@@ -68,7 +69,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
     setDragOverIndex(null);
   };
 
-  const addItem = () => {
+  const addItem = (category: ItemCategory = 'revenue') => {
     onChange([
       ...items,
       {
@@ -77,11 +78,12 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
         quantity: 1,
         unitPrice: 0,
         taxRate: defaultTaxRate,
+        category,
       },
     ]);
   };
 
-  const addForeignCurrencyItem = () => {
+  const addForeignCurrencyItem = (category: ItemCategory = 'expense_reimbursement') => {
     const newId = uuidv4();
     // 顧客のデフォルト為替レート・通貨を使用
     const defaultCurrency = customer?.defaultCurrency || 'CNY';
@@ -94,6 +96,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
         quantity: 1,
         unitPrice: 0,
         taxRate: defaultTaxRate,
+        category, // 外貨立替はデフォルトで「立替経費」
         foreignAmount: 0,
         exchangeRate: defaultExchangeRate,
         foreignCurrency: defaultCurrency,
@@ -112,6 +115,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
       unitPrice: setItem.unitPrice,
       taxRate: setItem.taxRate,
       taxCategory: setItem.taxCategory,
+      category: setItem.category || 'revenue',
     }));
     onChange([...items, ...newItems]);
     setShowItemSetSelector(false);
@@ -127,6 +131,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
         unit: product.unit,
         unitPrice: product.unitPrice,
         taxRate: product.taxRate,
+        category: 'revenue', // 商品は売上
       },
     ]);
     setShowProductSelector(null);
@@ -222,7 +227,8 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
     <div className="space-y-4">
       {/* Desktop Header */}
       <div className="hidden md:grid md:grid-cols-12 gap-2 px-2 text-sm font-medium text-gray-500">
-        <div className="col-span-5">品名・摘要</div>
+        <div className="col-span-4">品名・摘要</div>
+        <div className="col-span-1 text-center">区分</div>
         <div className="col-span-2 text-right">数量</div>
         <div className="col-span-2 text-right">単価</div>
         <div className="col-span-1 text-right">税率</div>
@@ -286,6 +292,26 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                 value={item.description}
                 onChange={(e) => updateItem(item.id, 'description', e.target.value)}
               />
+
+              {/* Category Selector - Mobile */}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">区分</label>
+                <select
+                  value={item.category || 'revenue'}
+                  onChange={(e) => updateItem(item.id, 'category', e.target.value as ItemCategory)}
+                  className={`w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    item.category === 'expense_reimbursement'
+                      ? 'border-orange-300 bg-orange-50 text-orange-700'
+                      : item.category === 'discount'
+                      ? 'border-red-300 bg-red-50 text-red-700'
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {Object.entries(ITEM_CATEGORY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Foreign Currency Fields - Mobile */}
               {hasForeignCurrency(item) && (
@@ -387,7 +413,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
             {/* Desktop Layout */}
             <div className="hidden md:block space-y-2">
               <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-5 flex gap-2">
+                <div className="col-span-4 flex gap-2">
                   <div className="cursor-grab active:cursor-grabbing p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
@@ -414,6 +440,24 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </button>
+                </div>
+                {/* Category Selector - Desktop */}
+                <div className="col-span-1">
+                  <select
+                    value={item.category || 'revenue'}
+                    onChange={(e) => updateItem(item.id, 'category', e.target.value as ItemCategory)}
+                    className={`w-full px-1 py-2 border rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      item.category === 'expense_reimbursement'
+                        ? 'border-orange-300 bg-orange-50 text-orange-700'
+                        : item.category === 'discount'
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    <option value="revenue">売上</option>
+                    <option value="expense_reimbursement">立替</option>
+                    <option value="discount">値引</option>
+                  </select>
                 </div>
                 <div className="col-span-2">
                   <input
@@ -521,7 +565,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
       <div className="flex flex-col sm:flex-row gap-2">
         <button
           type="button"
-          onClick={addItem}
+          onClick={() => addItem('revenue')}
           className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -531,7 +575,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
         </button>
         <button
           type="button"
-          onClick={addForeignCurrencyItem}
+          onClick={() => addForeignCurrencyItem('expense_reimbursement')}
           className="flex-1 py-3 border-2 border-dashed border-green-300 rounded-lg text-green-600 hover:border-green-400 hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -626,30 +670,93 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
 
 interface TotalsSummaryProps {
   items: LineItem[];
+  showCategoryBreakdown?: boolean;
 }
 
-export function TotalsSummary({ items }: TotalsSummaryProps) {
-  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = items.reduce(
-    (sum, item) => sum + Math.floor(item.quantity * item.unitPrice * (item.taxRate / 100)),
-    0
-  );
+export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSummaryProps) {
+  // カテゴリ別の集計
+  const revenueItems = items.filter((item) => !item.category || item.category === 'revenue');
+  const expenseItems = items.filter((item) => item.category === 'expense_reimbursement');
+  const discountItems = items.filter((item) => item.category === 'discount');
+
+  const calculateSubtotal = (itemList: LineItem[]) =>
+    itemList.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+  const calculateTax = (itemList: LineItem[]) =>
+    itemList.reduce((sum, item) => sum + Math.floor(item.quantity * item.unitPrice * (item.taxRate / 100)), 0);
+
+  const revenueSubtotal = calculateSubtotal(revenueItems);
+  const revenueTax = calculateTax(revenueItems);
+  const expenseSubtotal = calculateSubtotal(expenseItems);
+  const expenseTax = calculateTax(expenseItems);
+  const discountSubtotal = calculateSubtotal(discountItems);
+  const discountTax = calculateTax(discountItems);
+
+  const subtotal = revenueSubtotal + expenseSubtotal - discountSubtotal;
+  const taxAmount = revenueTax + expenseTax - discountTax;
   const total = subtotal + taxAmount;
 
+  const hasExpenses = expenseItems.length > 0;
+  const hasDiscounts = discountItems.length > 0;
+
   return (
-    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-      <div className="flex justify-between text-gray-600">
+    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
+      {/* カテゴリ別内訳（売上と立替経費が混在する場合のみ表示） */}
+      {showCategoryBreakdown && (hasExpenses || hasDiscounts) && (
+        <div className="pb-2 mb-2 border-b border-gray-200 dark:border-gray-600 space-y-1">
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">内訳</div>
+          {revenueItems.length > 0 && (
+            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                売上
+              </span>
+              <span>{formatCurrency(revenueSubtotal + revenueTax)}</span>
+            </div>
+          )}
+          {hasExpenses && (
+            <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                立替経費
+              </span>
+              <span>{formatCurrency(expenseSubtotal + expenseTax)}</span>
+            </div>
+          )}
+          {hasDiscounts && (
+            <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                値引き
+              </span>
+              <span>-{formatCurrency(discountSubtotal + discountTax)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex justify-between text-gray-600 dark:text-gray-400">
         <span>小計</span>
         <span>{formatCurrency(subtotal)}</span>
       </div>
-      <div className="flex justify-between text-gray-600">
+      <div className="flex justify-between text-gray-600 dark:text-gray-400">
         <span>消費税</span>
         <span>{formatCurrency(taxAmount)}</span>
       </div>
-      <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+      <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-gray-600">
         <span>合計</span>
         <span>{formatCurrency(total)}</span>
       </div>
+
+      {/* 純売上の表示（立替経費がある場合） */}
+      {showCategoryBreakdown && hasExpenses && (
+        <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex justify-between text-sm text-blue-600 dark:text-blue-400 font-medium">
+            <span>純売上（税込）</span>
+            <span>{formatCurrency(revenueSubtotal + revenueTax - discountSubtotal - discountTax)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

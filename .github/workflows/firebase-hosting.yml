@@ -35,10 +35,23 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: wonder-trade-9f078
+      - name: List build output
+        run: |
+          echo "=== Build output ==="
+          ls -la dist/
+          ls -la dist/assets/ || true
+          echo "=== index.html content ==="
+          cat dist/index.html
+
+      - name: Setup Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-service-account.json
+
+      - name: Install Firebase CLI and deploy
+        run: |
+          npm install -g firebase-tools
+          export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/firebase-service-account.json"
+          firebase deploy --only hosting --project wonder-trade-9f078
+
+      - name: Cleanup
+        if: always()
+        run: rm -f firebase-service-account.json

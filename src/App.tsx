@@ -18,7 +18,7 @@ function App() {
   return (
     <ThemeProvider>
       <AppProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/order">
           <Layout>
             <Routes>
               <Route path="/" element={<Dashboard />} />

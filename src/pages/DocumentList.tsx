@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Button, Input, Select, ConfirmModal, ChipGroup, Badge, Card, EmptyState } from '../components/common';
+import { AccountingExportModal } from '../components/documents';
 import {
   formatCurrency,
   formatDate,
@@ -28,6 +29,7 @@ export function DocumentList({ type }: DocumentListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showAccountingExport, setShowAccountingExport] = useState(false);
 
   const typeLabel = getDocumentTypeLabel(type);
   const basePath = `/${type}s`;
@@ -223,56 +225,70 @@ export function DocumentList({ type }: DocumentListProps) {
             </>
           )}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            // CSV Export
-            const csvHeader = type === 'invoice'
-              ? ['書類番号', '顧客名', '発行日', '支払期限', '金額', '入金済', 'ステータス']
-              : ['書類番号', '顧客名', '発行日', '金額', 'ステータス'];
+        <div className="flex items-center gap-2">
+          {(type === 'invoice' || type === 'receipt') && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowAccountingExport(true)}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              会計ソフト連携
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              // CSV Export
+              const csvHeader = type === 'invoice'
+                ? ['書類番号', '顧客名', '発行日', '支払期限', '金額', '入金済', 'ステータス']
+                : ['書類番号', '顧客名', '発行日', '金額', 'ステータス'];
 
-            const csvRows = filteredDocuments.map((doc) => {
-              const customerName = getCustomerName(doc.customerId);
-              if (type === 'invoice') {
-                const inv = doc as Invoice;
+              const csvRows = filteredDocuments.map((doc) => {
+                const customerName = getCustomerName(doc.customerId);
+                if (type === 'invoice') {
+                  const inv = doc as Invoice;
+                  return [
+                    doc.documentNumber,
+                    customerName,
+                    doc.issueDate,
+                    inv.dueDate,
+                    doc.total,
+                    inv.paidAmount,
+                    getStatusLabel(doc.status),
+                  ];
+                }
                 return [
                   doc.documentNumber,
                   customerName,
                   doc.issueDate,
-                  inv.dueDate,
                   doc.total,
-                  inv.paidAmount,
                   getStatusLabel(doc.status),
                 ];
-              }
-              return [
-                doc.documentNumber,
-                customerName,
-                doc.issueDate,
-                doc.total,
-                getStatusLabel(doc.status),
-              ];
-            });
+              });
 
-            const csvContent = [csvHeader, ...csvRows]
-              .map((row) => row.map((cell) => `"${cell}"`).join(','))
-              .join('\n');
+              const csvContent = [csvHeader, ...csvRows]
+                .map((row) => row.map((cell) => `"${cell}"`).join(','))
+                .join('\n');
 
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          CSV出力
-        </Button>
+              const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            CSV出力
+          </Button>
+        </div>
       </div>
 
       {/* Document List */}
@@ -457,6 +473,12 @@ export function DocumentList({ type }: DocumentListProps) {
         message={`選択した${selectedIds.size}件の${typeLabel}を削除しますか？この操作は取り消せません。`}
         confirmText="一括削除"
         variant="danger"
+      />
+
+      {/* Accounting Software Export Modal */}
+      <AccountingExportModal
+        isOpen={showAccountingExport}
+        onClose={() => setShowAccountingExport(false)}
       />
     </div>
   );

@@ -3,7 +3,19 @@ import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button, Input, Select } from '../components/common';
 import { ItemSetEditor } from '../components/settings';
-import { downloadBackup, readBackupFile, restoreBackup, getBackupStats, type BackupData } from '../utils/backup';
+import {
+  downloadBackup,
+  readBackupFile,
+  restoreBackup,
+  getBackupStats,
+  getAutoBackupSettings,
+  saveAutoBackupSettings,
+  sendBackupEmail,
+  getBackupDownloadUrl,
+  generateGmailLink,
+  type BackupData,
+  type AutoBackupSettings,
+} from '../utils/backup';
 import type { CompanyInfo, ElectronicStamp, DocumentTemplate } from '../types';
 
 // Stamp Preview Component
@@ -38,6 +50,212 @@ const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdA
       {stamp.showDate && (
         <span style={{ fontSize: `${stamp.size / 5}px` }}>{dateStr}</span>
       )}
+    </div>
+  );
+};
+
+// Auto Backup Section Component
+const AutoBackupSection = () => {
+  const [settings, setSettings] = useState<AutoBackupSettings>(getAutoBackupSettings);
+  const [isSending, setIsSending] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const handleSave = () => {
+    saveAutoBackupSettings(settings);
+    setMessage({ type: 'success', text: '自動バックアップ設定を保存しました' });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleSendNow = async () => {
+    if (!settings.email) {
+      setMessage({ type: 'error', text: 'メールアドレスを入力してください' });
+      return;
+    }
+
+    if (settings.emailjsServiceId && settings.emailjsTemplateId && settings.emailjsPublicKey) {
+      // EmailJS経由で送信
+      setIsSending(true);
+      try {
+        const result = await sendBackupEmail();
+        setMessage({ type: result.success ? 'success' : 'error', text: result.message });
+        if (result.success) {
+          setSettings(getAutoBackupSettings());
+        }
+      } finally {
+        setIsSending(false);
+      }
+    } else {
+      // Gmail経由で送信
+      handleSendViaGmail();
+    }
+  };
+
+  const handleSendViaGmail = () => {
+    if (!settings.email) {
+      setMessage({ type: 'error', text: 'メールアドレスを入力してください' });
+      return;
+    }
+
+    const { url, filename } = getBackupDownloadUrl();
+
+    // ファイルをダウンロード
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Gmailを開く
+    setTimeout(() => {
+      const gmailUrl = generateGmailLink(settings.email);
+      window.open(gmailUrl, '_blank');
+      URL.revokeObjectURL(url);
+
+      // 最終バックアップ日時を更新
+      const updated = { ...settings, lastBackupDate: new Date().toISOString() };
+      setSettings(updated);
+      saveAutoBackupSettings(updated);
+
+      setMessage({ type: 'info', text: 'バックアップファイルをダウンロードしました。Gmailでファイルを添付して送信してください。' });
+    }, 500);
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">自動バックアップ</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        毎月自動でバックアップを取得し、Gmailに送信します
+      </p>
+
+      <div className="space-y-4">
+        {/* 有効/無効 */}
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            checked={settings.enabled}
+            onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
+          />
+          <div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">月次自動バックアップを有効にする</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400">アプリ起動時に前回から1ヶ月経過していれば自動でバックアップを送信</p>
+          </div>
+        </label>
+
+        {/* メールアドレス */}
+        <Input
+          label="送信先メールアドレス"
+          type="email"
+          value={settings.email}
+          onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+          placeholder="example@gmail.com"
+          helperText="バックアップファイルの送信先"
+        />
+
+        {/* 最終バックアップ日時 */}
+        {settings.lastBackupDate && (
+          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              最終バックアップ: {new Date(settings.lastBackupDate).toLocaleString('ja-JP')}
+            </p>
+          </div>
+        )}
+
+        {/* 詳細設定（EmailJS） */}
+        <div className="border-t pt-4 dark:border-gray-600">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            詳細設定（EmailJS）
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-4 space-y-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                  <strong>EmailJS を使用すると完全自動でメール送信できます</strong>
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">
+                  1. <a href="https://www.emailjs.com/" target="_blank" rel="noopener noreferrer" className="underline">EmailJS</a> で無料アカウントを作成
+                  <br />
+                  2. Gmail サービスを追加
+                  <br />
+                  3. テンプレートを作成（変数: to_email, backup_date, backup_data）
+                  <br />
+                  4. 以下にIDを入力
+                </p>
+              </div>
+
+              <Input
+                label="Service ID"
+                value={settings.emailjsServiceId}
+                onChange={(e) => setSettings({ ...settings, emailjsServiceId: e.target.value })}
+                placeholder="service_xxxxxxx"
+              />
+              <Input
+                label="Template ID"
+                value={settings.emailjsTemplateId}
+                onChange={(e) => setSettings({ ...settings, emailjsTemplateId: e.target.value })}
+                placeholder="template_xxxxxxx"
+              />
+              <Input
+                label="Public Key"
+                value={settings.emailjsPublicKey}
+                onChange={(e) => setSettings({ ...settings, emailjsPublicKey: e.target.value })}
+                placeholder="xxxxxxxxxxxxxx"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* メッセージ */}
+        {message && (
+          <div className={`p-3 rounded-lg ${
+            message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300' :
+            message.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' :
+            'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+          }`}>
+            <p className="text-sm">{message.text}</p>
+          </div>
+        )}
+
+        {/* ボタン */}
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={handleSave}>
+            設定を保存
+          </Button>
+          <Button variant="secondary" onClick={handleSendNow} disabled={isSending || !settings.email}>
+            {isSending ? (
+              <>
+                <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                送信中...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                今すぐバックアップを送信
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -874,6 +1092,9 @@ export function Settings() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
         <ItemSetEditor />
       </div>
+
+      {/* Auto Backup */}
+      <AutoBackupSection />
 
       {/* Data Management */}
       <DataManagementSection />

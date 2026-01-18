@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CommandPalette } from '../common/CommandPalette';
+import { BackupNotification } from '../common/BackupNotification';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ManualModal } from './ManualModal';
 
@@ -59,6 +60,9 @@ export function Layout({ children }: LayoutProps) {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
       />
+
+      {/* Backup Notification */}
+      <BackupNotification />
 
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">

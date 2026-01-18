@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Button, Input, Select } from '../components/common';
 import { ItemSetEditor } from '../components/settings';
+import { downloadBackup, readBackupFile, restoreBackup, getBackupStats, type BackupData } from '../utils/backup';
 import type { CompanyInfo, ElectronicStamp, DocumentTemplate } from '../types';
 
 // Stamp Preview Component
@@ -37,6 +38,141 @@ const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdA
       {stamp.showDate && (
         <span style={{ fontSize: `${stamp.size / 5}px` }}>{dateStr}</span>
       )}
+    </div>
+  );
+};
+
+// Data Management Section Component
+const DataManagementSection = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [backupPreview, setBackupPreview] = useState<BackupData | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  const handleExport = () => {
+    downloadBackup();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setRestoreError(null);
+    try {
+      const backup = await readBackupFile(file);
+      setBackupPreview(backup);
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : 'ファイルの読み込みに失敗しました');
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRestore = () => {
+    if (!backupPreview) return;
+
+    setIsRestoring(true);
+    try {
+      restoreBackup(backupPreview);
+      window.location.reload();
+    } catch (error) {
+      setRestoreError('復元に失敗しました');
+      setIsRestoring(false);
+    }
+  };
+
+  const stats = backupPreview ? getBackupStats(backupPreview) : null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">データ管理</h2>
+      <div className="space-y-4">
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">データについて</h3>
+          <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            すべてのデータはブラウザのローカルストレージに保存されています。
+            ブラウザのデータを削除するとデータが失われる可能性があります。
+            定期的にバックアップを取ることをお勧めします。
+          </p>
+        </div>
+
+        {/* Export/Import Buttons */}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="secondary" onClick={handleExport}>
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            バックアップを作成
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            バックアップから復元
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+        </div>
+
+        {/* Error Message */}
+        {restoreError && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <p className="text-sm text-red-700 dark:text-red-300">{restoreError}</p>
+          </div>
+        )}
+
+        {/* Backup Preview */}
+        {backupPreview && stats && (
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">バックアップの内容</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.customers}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">顧客</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.documents}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">書類</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.products}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">商品</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.expenseReports}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">経費レポート</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              作成日時: {new Date(stats.exportedAt).toLocaleString('ja-JP')}
+            </p>
+            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                復元すると現在のデータは上書きされます。この操作は取り消せません。
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={handleRestore} disabled={isRestoring}>
+                {isRestoring ? '復元中...' : 'このバックアップを復元'}
+              </Button>
+              <Button variant="secondary" onClick={() => setBackupPreview(null)}>
+                キャンセル
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -739,68 +875,7 @@ export function Settings() {
       </div>
 
       {/* Data Management */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">データ管理</h2>
-        <div className="space-y-4">
-          <div className="p-4 bg-yellow-50 rounded-lg">
-            <h3 className="font-medium text-yellow-800 mb-2">データについて</h3>
-            <p className="text-sm text-yellow-700">
-              すべてのデータはブラウザのローカルストレージに保存されています。
-              ブラウザのデータを削除するとデータが失われる可能性があります。
-              定期的にバックアップを取ることをお勧めします。
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const data = {
-                  customers: localStorage.getItem('invoice-app-customers'),
-                  documents: localStorage.getItem('invoice-app-documents'),
-                  settings: localStorage.getItem('invoice-app-settings'),
-                };
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `invoice-app-backup-${new Date().toISOString().split('T')[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              データをエクスポート
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.json';
-                input.onchange = (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    try {
-                      const data = JSON.parse(e.target?.result as string);
-                      if (data.customers) localStorage.setItem('invoice-app-customers', data.customers);
-                      if (data.documents) localStorage.setItem('invoice-app-documents', data.documents);
-                      if (data.settings) localStorage.setItem('invoice-app-settings', data.settings);
-                      window.location.reload();
-                    } catch (err) {
-                      alert('ファイルの読み込みに失敗しました');
-                    }
-                  };
-                  reader.readAsText(file);
-                };
-                input.click();
-              }}
-            >
-              データをインポート
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataManagementSection />
 
       {/* Save Button */}
       <div className="flex items-center justify-end gap-4">

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useApp } from '../contexts/AppContext';
 import { formatCurrency, getTodayString } from '../utils/format';
 import { Card, Button, Input, Select } from '../components/common';
+import { getCachedExchangeRate, getHistoricalExchangeRate, getMonthlyAverageRate } from '../utils/exchangeRate';
 import type { ExpenseItem, ExpenseCategory, ExpenseReportStatus } from '../types';
 import { EXPENSE_CATEGORY_LABELS } from '../types';
 
@@ -22,6 +23,10 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<ExpenseReportStatus>('draft');
+  const [isFetchingRate, setIsFetchingRate] = useState(false);
+  const [rateError, setRateError] = useState<string | null>(null);
+  const [rateFetchDate, setRateFetchDate] = useState<string>('latest');
+  const [rateInfo, setRateInfo] = useState<string | null>(null);
 
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
@@ -55,6 +60,38 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       }
     }
   }, [customerId, customers]);
+
+  // 為替レート取得関数
+  const fetchExchangeRate = async (dateType: 'latest' | 'specific' | 'monthly') => {
+    setIsFetchingRate(true);
+    setRateError(null);
+    setRateInfo(null);
+
+    try {
+      let result;
+
+      if (dateType === 'latest') {
+        result = await getCachedExchangeRate('latest', 'CNY', 'JPY');
+        setRateInfo(`最新レート (${result.date})`);
+      } else if (dateType === 'specific' && rateFetchDate !== 'latest') {
+        result = await getHistoricalExchangeRate(rateFetchDate, 'CNY', 'JPY');
+        setRateInfo(`${rateFetchDate} のレート`);
+      } else if (dateType === 'monthly') {
+        const today = new Date();
+        result = await getMonthlyAverageRate(today.getFullYear(), today.getMonth() + 1, 'CNY', 'JPY');
+        setRateInfo(`${result.date} の月平均レート`);
+      } else {
+        result = await getCachedExchangeRate('latest', 'CNY', 'JPY');
+        setRateInfo(`最新レート (${result.date})`);
+      }
+
+      setExchangeRate(result.rate);
+    } catch (error) {
+      setRateError(error instanceof Error ? error.message : '為替レートの取得に失敗しました');
+    } finally {
+      setIsFetchingRate(false);
+    }
+  };
 
   const addExpenseRow = () => {
     const newExpense: ExpenseItem = {
@@ -146,7 +183,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       {/* Basic Info */}
       <Card>
         <h2 className="font-semibold text-gray-900 dark:text-white mb-4">基本情報</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <Input
             label="レポート名"
             value={name}
@@ -159,13 +196,80 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
             onChange={(value) => setCustomerId(value)}
             options={customerOptions}
           />
-          <Input
-            label="為替レート（円/元）"
-            type="number"
-            step="0.01"
-            value={exchangeRate}
-            onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
-          />
+        </div>
+
+        {/* Exchange Rate Section */}
+        <div className="border-t pt-4 dark:border-gray-600">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">為替レート（円/元）</h3>
+            {rateInfo && (
+              <span className="text-xs text-green-600 dark:text-green-400">{rateInfo}</span>
+            )}
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Rate Input */}
+            <div className="flex-1">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+                <span className="flex items-center text-gray-500 dark:text-gray-400">円/元</span>
+              </div>
+            </div>
+
+            {/* Fetch Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => fetchExchangeRate('latest')}
+                disabled={isFetchingRate}
+              >
+                {isFetchingRate ? '取得中...' : '最新レート取得'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => fetchExchangeRate('monthly')}
+                disabled={isFetchingRate}
+              >
+                今月平均
+              </Button>
+            </div>
+          </div>
+
+          {/* Historical Rate Fetch */}
+          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">過去の日付で為替レートを取得</p>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={rateFetchDate === 'latest' ? getTodayString() : rateFetchDate}
+                onChange={(e) => setRateFetchDate(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => fetchExchangeRate('specific')}
+                disabled={isFetchingRate || rateFetchDate === 'latest'}
+              >
+                この日のレートを取得
+              </Button>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {rateError && (
+            <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{rateError}</p>
+            </div>
+          )}
         </div>
       </Card>
 

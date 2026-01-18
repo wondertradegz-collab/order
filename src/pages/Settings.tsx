@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Button, Input, Select } from '../components/common';
-import type { CompanyInfo, ElectronicStamp } from '../types';
+import type { CompanyInfo, ElectronicStamp, DocumentTemplate } from '../types';
 
 // Stamp Preview Component
 const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdAt'> }) => {
@@ -40,10 +40,12 @@ const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdA
 };
 
 export function Settings() {
-  const { settings, updateSettings, addStamp, updateStamp, deleteStamp } = useApp();
+  const { settings, updateSettings, addStamp, updateStamp, deleteStamp, templates, deleteTemplate } = useApp();
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(settings.companyInfo);
   const [defaultTaxRate, setDefaultTaxRate] = useState(settings.defaultTaxRate);
   const [prefixes, setPrefixes] = useState(settings.documentNumberPrefix);
+  const [useYearPrefix, setUseYearPrefix] = useState(settings.useYearPrefix ?? false);
+  const [yearPrefixFormat, setYearPrefixFormat] = useState<'full' | 'short'>(settings.yearPrefixFormat ?? 'full');
   const [saved, setSaved] = useState(false);
 
   // Stamp editor state
@@ -61,13 +63,35 @@ export function Settings() {
     setCompanyInfo(settings.companyInfo);
     setDefaultTaxRate(settings.defaultTaxRate);
     setPrefixes(settings.documentNumberPrefix);
+    setUseYearPrefix(settings.useYearPrefix ?? false);
+    setYearPrefixFormat(settings.yearPrefixFormat ?? 'full');
   }, [settings]);
+
+  // Handle logo upload
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      alert('ロゴファイルは500KB以下にしてください');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setCompanyInfo({ ...companyInfo, logoUrl: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = () => {
     updateSettings({
       companyInfo,
       defaultTaxRate,
       documentNumberPrefix: prefixes,
+      useYearPrefix,
+      yearPrefixFormat,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -92,6 +116,50 @@ export function Settings() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">会社情報</h2>
         <p className="text-sm text-gray-500 mb-4">書類に表示される自社の情報を設定します</p>
         <div className="space-y-4">
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">会社ロゴ</label>
+            <div className="flex items-center gap-4">
+              {companyInfo.logoUrl ? (
+                <div className="relative">
+                  <img
+                    src={companyInfo.logoUrl}
+                    alt="Company logo"
+                    className="w-24 h-24 object-contain border rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCompanyInfo({ ...companyInfo, logoUrl: undefined })}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+              <div>
+                <label className="cursor-pointer">
+                  <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-block">
+                    ロゴを選択
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-xs text-gray-500 mt-1">500KB以下のPNG/JPG</p>
+              </div>
+            </div>
+          </div>
           <Input
             label="会社名 / 屋号"
             value={companyInfo.name}
@@ -219,10 +287,35 @@ export function Settings() {
               placeholder="R"
             />
           </div>
+          {/* Year Prefix Settings */}
+          <div className="border-t pt-4 mt-4">
+            <label className="flex items-center gap-2 text-sm mb-3">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-gray-300"
+                checked={useYearPrefix}
+                onChange={(e) => setUseYearPrefix(e.target.checked)}
+              />
+              書類番号に年度プレフィックスを付ける
+            </label>
+            {useYearPrefix && (
+              <div className="ml-6">
+                <Select
+                  label="年度形式"
+                  options={[
+                    { value: 'full', label: '4桁 (例: 2026)' },
+                    { value: 'short', label: '2桁 (例: 26)' },
+                  ]}
+                  value={yearPrefixFormat}
+                  onChange={(val) => setYearPrefixFormat(val as 'full' | 'short')}
+                />
+              </div>
+            )}
+          </div>
           <p className="text-sm text-gray-500">
-            次の書類番号: 見積書 {prefixes.quotation}-{String(settings.nextNumbers.quotation).padStart(5, '0')} /
-            請求書 {prefixes.invoice}-{String(settings.nextNumbers.invoice).padStart(5, '0')} /
-            領収書 {prefixes.receipt}-{String(settings.nextNumbers.receipt).padStart(5, '0')}
+            次の書類番号: 見積書 {prefixes.quotation}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.quotation).padStart(5, '0')} /
+            請求書 {prefixes.invoice}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.invoice).padStart(5, '0')} /
+            領収書 {prefixes.receipt}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.receipt).padStart(5, '0')}
           </p>
         </div>
       </div>
@@ -422,6 +515,45 @@ export function Settings() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Templates Management */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">書類テンプレート</h2>
+        <p className="text-sm text-gray-500 mb-4">よく使う明細セットをテンプレートとして保存・管理します</p>
+
+        {templates.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">
+            テンプレートがありません。書類作成画面から「テンプレートとして保存」で登録できます。
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {templates.map((template: DocumentTemplate) => (
+              <div key={template.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">{template.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {template.type === 'quotation' ? '見積書' : template.type === 'invoice' ? '請求書' : '領収書'}
+                    　・　{template.items.length}件の明細
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`「${template.name}」を削除しますか？`)) {
+                      deleteTemplate(template.id);
+                    }
+                  }}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Data Management */}

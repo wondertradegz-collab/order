@@ -48,6 +48,20 @@ export function Dashboard() {
       .slice(0, 5);
   }, [documents]);
 
+  // Invoices approaching due date (within 7 days) or overdue
+  const alertInvoices = useMemo(() => {
+    const today = new Date();
+    const sevenDaysLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    return (documents.filter((d) => {
+      if (d.type !== 'invoice' || d.status === 'paid' || d.status === 'cancelled') return false;
+      const invoice = d as Invoice;
+      const dueDate = new Date(invoice.dueDate);
+      return dueDate <= sevenDaysLater;
+    }) as Invoice[])
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  }, [documents]);
+
   const getCustomerName = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     return customer?.companyName || customer?.name || '不明';
@@ -105,6 +119,50 @@ export function Dashboard() {
           color="blue"
         />
       </div>
+
+      {/* Due Date Alerts */}
+      {alertInvoices.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="font-semibold text-red-800">支払期限アラート</h3>
+          </div>
+          <div className="space-y-2">
+            {alertInvoices.slice(0, 3).map((invoice) => {
+              const dueDate = new Date(invoice.dueDate);
+              const today = new Date();
+              const isOverdue = dueDate < today;
+              const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+              return (
+                <Link
+                  key={invoice.id}
+                  to={`/invoices/${invoice.id}`}
+                  className="flex items-center justify-between p-2 bg-white rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{invoice.documentNumber}</p>
+                    <p className="text-sm text-gray-600">{getCustomerName(invoice.customerId)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">{formatCurrency(invoice.total - invoice.paidAmount)}</p>
+                    <p className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
+                      {isOverdue ? `${Math.abs(daysUntilDue)}日超過` : daysUntilDue === 0 ? '本日期限' : `あと${daysUntilDue}日`}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+            {alertInvoices.length > 3 && (
+              <Link to="/invoices?status=unpaid" className="block text-center text-sm text-red-600 hover:text-red-700 pt-2">
+                他{alertInvoices.length - 3}件を表示
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -169,6 +169,16 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                 <p>但し、{getProviso()}</p>
               </div>
             )}
+
+            {/* Receipt: Revenue Stamp indication for amounts >= 50,000 yen */}
+            {document.type === 'receipt' && document.total >= 50000 && (
+              <div className="border border-dashed border-gray-400 mt-3 p-2 text-center">
+                <p className="text-xs text-gray-600">収入印紙</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {document.total >= 5000000 ? '¥10,000' : document.total >= 1000000 ? '¥2,000' : '¥200'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Right: Document Info & Company Info */}
@@ -181,8 +191,15 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               </div>
             </div>
 
-            {/* Company Info */}
+            {/* Company Info with Logo */}
             <div className="text-right mb-4">
+              {companyInfo.logoUrl && (
+                <img
+                  src={companyInfo.logoUrl}
+                  alt="Company logo"
+                  className="w-20 h-20 object-contain ml-auto mb-2"
+                />
+              )}
               <p className="font-semibold">{companyInfo.name || ''}</p>
               {companyInfo.address && <p className="text-xs">{companyInfo.address}</p>}
               {companyInfo.registrationNumber && (

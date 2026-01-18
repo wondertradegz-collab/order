@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Button, Input, Modal, ConfirmModal } from '../components/common';
 import { formatDate } from '../utils/format';
@@ -114,7 +115,9 @@ export function Customers() {
                     <tr key={customer.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-gray-900">{customer.name}</p>
+                          <Link to={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                            {customer.name}
+                          </Link>
                           {customer.companyName && (
                             <p className="text-sm text-gray-500">{customer.companyName}</p>
                           )}
@@ -167,7 +170,9 @@ export function Customers() {
                 <div key={customer.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">{customer.name}</p>
+                      <Link to={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:text-blue-700">
+                        {customer.name}
+                      </Link>
                       {customer.companyName && (
                         <p className="text-sm text-gray-500">{customer.companyName}</p>
                       )}

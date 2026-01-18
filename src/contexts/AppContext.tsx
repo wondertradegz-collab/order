@@ -13,6 +13,7 @@ import type {
   Product,
   PaymentRecord,
   ElectronicStamp,
+  DocumentTemplate,
 } from '../types';
 
 // デフォルト設定
@@ -88,6 +89,13 @@ interface AppContextType {
   updateStamp: (id: string, stamp: Partial<ElectronicStamp>) => void;
   deleteStamp: (id: string) => void;
 
+  // テンプレート
+  templates: DocumentTemplate[];
+  addTemplate: (template: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt'>) => DocumentTemplate;
+  updateTemplate: (id: string, template: Partial<DocumentTemplate>) => void;
+  deleteTemplate: (id: string) => void;
+  getTemplatesByType: (type: DocumentType) => DocumentTemplate[];
+
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
@@ -101,6 +109,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useLocalStorage<Product[]>('invoice-app-products', []);
   const [paymentRecords, setPaymentRecords] = useLocalStorage<PaymentRecord[]>('invoice-app-payments', []);
   const [settings, setSettings] = useLocalStorage<AppSettings>('invoice-app-settings', defaultSettings);
+  const [templates, setTemplates] = useLocalStorage<DocumentTemplate[]>('invoice-app-templates', []);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -145,6 +154,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         [type]: prev.nextNumbers[type] + 1,
       },
     }));
+
+    // 年度プレフィックスが有効な場合
+    if (settings.useYearPrefix) {
+      const year = new Date().getFullYear();
+      const yearStr = settings.yearPrefixFormat === 'short' ? String(year).slice(2) : String(year);
+      return `${prefix}-${yearStr}-${paddedNumber}`;
+    }
 
     return `${prefix}-${paddedNumber}`;
   }, [settings, setSettings]);
@@ -412,6 +428,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [setSettings]);
 
+  // テンプレート操作
+  const addTemplate = useCallback((template: Omit<DocumentTemplate, 'id' | 'createdAt' | 'updatedAt'>): DocumentTemplate => {
+    const now = new Date().toISOString();
+    const newTemplate: DocumentTemplate = {
+      ...template,
+      id: uuidv4(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setTemplates((prev) => [...prev, newTemplate]);
+    return newTemplate;
+  }, [setTemplates]);
+
+  const updateTemplate = useCallback((id: string, template: Partial<DocumentTemplate>) => {
+    setTemplates((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, ...template, updatedAt: new Date().toISOString() } : t
+      )
+    );
+  }, [setTemplates]);
+
+  const deleteTemplate = useCallback((id: string) => {
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  }, [setTemplates]);
+
+  const getTemplatesByType = useCallback((type: DocumentType) => {
+    return templates.filter((t) => t.type === type);
+  }, [templates]);
+
   const value = useMemo(() => ({
     customers,
     addCustomer,
@@ -441,6 +486,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addStamp,
     updateStamp,
     deleteStamp,
+    templates,
+    addTemplate,
+    updateTemplate,
+    deleteTemplate,
+    getTemplatesByType,
     generateDocumentNumber,
     calculateTotals,
   }), [
@@ -472,6 +522,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addStamp,
     updateStamp,
     deleteStamp,
+    templates,
+    addTemplate,
+    updateTemplate,
+    deleteTemplate,
+    getTemplatesByType,
     generateDocumentNumber,
     calculateTotals,
   ]);

@@ -126,6 +126,18 @@ export interface CompanyInfo {
   logoUrl?: string;
 }
 
+// 書類テンプレート
+export interface DocumentTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  type: DocumentType;
+  items: Omit<LineItem, 'id'>[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // アプリの設定
 export interface AppSettings {
   companyInfo: CompanyInfo;
@@ -141,6 +153,8 @@ export interface AppSettings {
     receipt: number;
   };
   stamps: ElectronicStamp[]; // 電子印のリスト
+  useYearPrefix?: boolean; // 書類番号に年度プレフィックスを使用
+  yearPrefixFormat?: 'full' | 'short'; // full: 2026, short: 26
 }
 
 // ダッシュボード用の統計

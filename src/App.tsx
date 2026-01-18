@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import {
   Dashboard,
   Customers,
+  CustomerDetail,
   DocumentList,
   DocumentDetail,
   DocumentEditor,
@@ -23,6 +24,7 @@ function App() {
 
             {/* Customers */}
             <Route path="/customers" element={<Customers />} />
+            <Route path="/customers/:id" element={<CustomerDetail />} />
 
             {/* Quotations */}
             <Route path="/quotations" element={<DocumentList type="quotation" />} />

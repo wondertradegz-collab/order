@@ -187,21 +187,75 @@ export function DocumentList({ type }: DocumentListProps) {
         </div>
       </div>
 
-      {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-blue-700">
-            {selectedIds.size}件選択中
-          </span>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setShowBulkDeleteConfirm(true)}
-          >
-            一括削除
-          </Button>
+      {/* Action Bar */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {selectedIds.size > 0 && (
+            <>
+              <span className="text-sm text-blue-700">
+                {selectedIds.size}件選択中
+              </span>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowBulkDeleteConfirm(true)}
+              >
+                一括削除
+              </Button>
+            </>
+          )}
         </div>
-      )}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            // CSV Export
+            const csvHeader = type === 'invoice'
+              ? ['書類番号', '顧客名', '発行日', '支払期限', '金額', '入金済', 'ステータス']
+              : ['書類番号', '顧客名', '発行日', '金額', 'ステータス'];
+
+            const csvRows = filteredDocuments.map((doc) => {
+              const customerName = getCustomerName(doc.customerId);
+              if (type === 'invoice') {
+                const inv = doc as Invoice;
+                return [
+                  doc.documentNumber,
+                  customerName,
+                  doc.issueDate,
+                  inv.dueDate,
+                  doc.total,
+                  inv.paidAmount,
+                  getStatusLabel(doc.status),
+                ];
+              }
+              return [
+                doc.documentNumber,
+                customerName,
+                doc.issueDate,
+                doc.total,
+                getStatusLabel(doc.status),
+              ];
+            });
+
+            const csvContent = [csvHeader, ...csvRows]
+              .map((row) => row.map((cell) => `"${cell}"`).join(','))
+              .join('\n');
+
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          CSV出力
+        </Button>
+      </div>
 
       {/* Document List */}
       {filteredDocuments.length === 0 ? (

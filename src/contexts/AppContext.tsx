@@ -1,6 +1,15 @@
-import React, { createContext, useContext, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import {
+  isCloudSyncAvailable,
+  loadFromCloud,
+  saveToCloud,
+  subscribeToCloudUpdates,
+  createDebouncedSave,
+  type SyncStatus,
+  type CloudData,
+} from '../lib/firestore-sync';
 import type {
   Customer,
   Document,
@@ -19,6 +28,7 @@ import type {
   Memo,
   ExpenseSplit,
 } from '../types';
+
 
 // デフォルト設定
 const defaultSettings: AppSettings = {
@@ -137,6 +147,12 @@ interface AppContextType {
   // ユーティリティ
   generateDocumentNumber: (type: DocumentType) => string;
   calculateTotals: (items: LineItem[]) => { subtotal: number; taxAmount: number; total: number };
+
+  // クラウド同期
+  syncStatus: SyncStatus;
+  isCloudEnabled: boolean;
+  lastSyncTime: string | null;
+  forceSync: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -152,6 +168,176 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [expenseReports, setExpenseReports] = useLocalStorage<ExpenseReport[]>('invoice-app-expense-reports', []);
   const [memos, setMemos] = useLocalStorage<Memo[]>('invoice-app-memos', []);
   const [expenseSplits, setExpenseSplits] = useLocalStorage<ExpenseSplit[]>('invoice-app-expense-splits', []);
+
+  // Cloud sync state
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [isCloudEnabled] = useState(() => isCloudSyncAvailable());
+  const isInitialLoad = useRef(true);
+  const skipNextSync = useRef(false);
+  const debouncedSave = useRef(createDebouncedSave(2000));
+
+  // Load initial data from cloud
+  useEffect(() => {
+    if (!isCloudEnabled) return;
+
+    const loadInitialData = async () => {
+      setSyncStatus('syncing');
+      try {
+        const cloudData = await loadFromCloud();
+        if (cloudData) {
+          skipNextSync.current = true;
+          // Update local state with cloud data
+          if (cloudData.customers.length > 0 || customers.length === 0) {
+            setCustomers(cloudData.customers);
+          }
+          if (cloudData.documents.length > 0 || documents.length === 0) {
+            setDocuments(cloudData.documents);
+          }
+          if (cloudData.products.length > 0 || products.length === 0) {
+            setProducts(cloudData.products);
+          }
+          if (cloudData.expenseReports.length > 0 || expenseReports.length === 0) {
+            setExpenseReports(cloudData.expenseReports);
+          }
+          if (cloudData.settings) {
+            setSettings(cloudData.settings);
+          }
+          if (cloudData.templates.length > 0 || templates.length === 0) {
+            setTemplates(cloudData.templates);
+          }
+          if (cloudData.memos.length > 0 || memos.length === 0) {
+            setMemos(cloudData.memos);
+          }
+          if (cloudData.expenseSplits.length > 0 || expenseSplits.length === 0) {
+            setExpenseSplits(cloudData.expenseSplits);
+          }
+          setLastSyncTime(cloudData.lastUpdated);
+          setSyncStatus('synced');
+        } else {
+          // No cloud data, upload local data
+          await saveToCloud({
+            customers,
+            documents,
+            products,
+            expenseReports,
+            settings,
+            templates,
+            memos,
+            expenseSplits,
+          });
+          setSyncStatus('synced');
+        }
+      } catch (error) {
+        console.error('Failed to load from cloud:', error);
+        setSyncStatus('error');
+      }
+      isInitialLoad.current = false;
+    };
+
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCloudEnabled]);
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!isCloudEnabled) return;
+
+    const unsubscribe = subscribeToCloudUpdates(
+      (cloudData: CloudData) => {
+        if (isInitialLoad.current) return;
+
+        skipNextSync.current = true;
+        setCustomers(cloudData.customers);
+        setDocuments(cloudData.documents);
+        setProducts(cloudData.products);
+        setExpenseReports(cloudData.expenseReports);
+        if (cloudData.settings) {
+          setSettings(cloudData.settings);
+        }
+        setTemplates(cloudData.templates);
+        setMemos(cloudData.memos);
+        setExpenseSplits(cloudData.expenseSplits);
+        setLastSyncTime(cloudData.lastUpdated);
+        setSyncStatus('synced');
+      },
+      (error) => {
+        console.error('Cloud subscription error:', error);
+        setSyncStatus('error');
+      }
+    );
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCloudEnabled]);
+
+  // Sync data changes to cloud (debounced)
+  useEffect(() => {
+    if (!isCloudEnabled || isInitialLoad.current) return;
+    if (skipNextSync.current) {
+      skipNextSync.current = false;
+      return;
+    }
+
+    setSyncStatus('syncing');
+    debouncedSave.current.save({
+      customers,
+      documents,
+      products,
+      expenseReports,
+      settings,
+      templates,
+      memos,
+      expenseSplits,
+    });
+
+    // Update sync status after debounce
+    const timer = setTimeout(() => {
+      setSyncStatus('synced');
+      setLastSyncTime(new Date().toISOString());
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [
+    isCloudEnabled,
+    customers,
+    documents,
+    products,
+    expenseReports,
+    settings,
+    templates,
+    memos,
+    expenseSplits,
+  ]);
+
+  // Force sync function
+  const forceSync = useCallback(async () => {
+    if (!isCloudEnabled) return;
+
+    setSyncStatus('syncing');
+    try {
+      await debouncedSave.current.flush();
+      await saveToCloud({
+        customers,
+        documents,
+        products,
+        expenseReports,
+        settings,
+        templates,
+        memos,
+        expenseSplits,
+      });
+      setLastSyncTime(new Date().toISOString());
+      setSyncStatus('synced');
+    } catch (error) {
+      console.error('Force sync failed:', error);
+      setSyncStatus('error');
+    }
+  }, [isCloudEnabled, customers, documents, products, expenseReports, settings, templates, memos, expenseSplits]);
 
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
@@ -851,6 +1037,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateParticipantPayment,
     generateDocumentNumber,
     calculateTotals,
+    // Cloud sync
+    syncStatus,
+    isCloudEnabled,
+    lastSyncTime,
+    forceSync,
   }), [
     customers,
     addCustomer,
@@ -913,6 +1104,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updateParticipantPayment,
     generateDocumentNumber,
     calculateTotals,
+    syncStatus,
+    isCloudEnabled,
+    lastSyncTime,
+    forceSync,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

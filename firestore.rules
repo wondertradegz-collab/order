@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // メタデータ（アプリデータ）へのアクセスを許可
+    // 注意: 本番環境では認証を追加することを推奨
+    match /metadata/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 他のコレクションへのアクセスを拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// 本番環境向けの推奨ルール（認証を使用する場合）:
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /metadata/{document=**} {
+//       allow read, write: if request.auth != null;
+//     }
+//   }
+// }

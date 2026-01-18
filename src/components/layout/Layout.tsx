@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { CommandPalette } from '../common/CommandPalette';
 import { BackupNotification } from '../common/BackupNotification';
+import { SyncStatusIndicator } from '../common/SyncStatusIndicator';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ManualModal } from './ManualModal';
 
@@ -160,8 +161,13 @@ export function Layout({ children }: LayoutProps) {
           </nav>
 
           {/* Settings (Desktop) */}
-          <div className="hidden lg:flex px-3 py-4 border-t border-gray-200 dark:border-gray-700 justify-center">
-            <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
+          <div className="hidden lg:flex flex-col gap-3 px-3 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-center">
+              <SettingsDropdown onOpenManual={() => setIsManualOpen(true)} />
+            </div>
+            <div className="flex justify-center">
+              <SyncStatusIndicator />
+            </div>
           </div>
         </div>
       </aside>

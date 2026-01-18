@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useApp } from '../contexts/AppContext';
@@ -27,8 +27,11 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   const [rateError, setRateError] = useState<string | null>(null);
   const [rateFetchDate, setRateFetchDate] = useState<string>('latest');
   const [rateInfo, setRateInfo] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const bulkFileInputRef = useRef<HTMLInputElement | null>(null);
+  const dropZoneRef = useRef<HTMLDivElement | null>(null);
 
   // 編集モード時にデータを読み込み
   useEffect(() => {
@@ -121,6 +124,86 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       updateExpense(expenseId, { screenshot: base64 });
     };
     reader.readAsDataURL(file);
+  };
+
+  // 複数画像から経費項目を一括作成
+  const createExpensesFromImages = useCallback((files: File[]) => {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    imageFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        const newExpense: ExpenseItem = {
+          id: uuidv4(),
+          date: getTodayString(),
+          amountRMB: 0,
+          description: '',
+          category: 'other',
+          screenshot: base64,
+        };
+        setExpenses((prev) => [...prev, newExpense]);
+      };
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // ドラッグ＆ドロップハンドラー
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    createExpensesFromImages(files);
+  }, [createExpensesFromImages]);
+
+  // クリップボードからの貼り付け
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        createExpensesFromImages(imageFiles);
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [createExpensesFromImages]);
+
+  // 一括ファイル選択ハンドラー
+  const handleBulkFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    createExpensesFromImages(files);
+    // 同じファイルを再選択できるようにリセット
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = '';
+    }
   };
 
   const totals = useMemo(() => {
@@ -277,12 +360,58 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900 dark:text-white">経費明細</h2>
-          <Button variant="secondary" size="sm" onClick={addExpenseRow}>
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <div className="flex gap-2">
+            {/* 一括画像追加ボタン */}
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              ref={bulkFileInputRef}
+              onChange={handleBulkFileSelect}
+              className="hidden"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => bulkFileInputRef.current?.click()}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              画像から追加
+            </Button>
+            <Button variant="secondary" size="sm" onClick={addExpenseRow}>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              行を追加
+            </Button>
+          </div>
+        </div>
+
+        {/* ドラッグ＆ドロップエリア */}
+        <div
+          ref={dropZoneRef}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative mb-4 p-6 border-2 border-dashed rounded-xl transition-all ${
+            isDragging
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+          }`}
+        >
+          <div className="text-center">
+            <svg className={`mx-auto w-10 h-10 mb-2 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            行を追加
-          </Button>
+            <p className={`text-sm ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+              {isDragging ? '画像をドロップして追加' : '画像をドラッグ＆ドロップ、または Ctrl+V で貼り付け'}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              複数の画像を一度に追加すると、その枚数分の項目が自動作成されます
+            </p>
+          </div>
         </div>
 
         {expenses.length === 0 ? (

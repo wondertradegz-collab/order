@@ -71,7 +71,7 @@ function App() {
       <LanguageProvider>
         <AuthProvider>
           <AppProvider>
-            <BrowserRouter basename="/order">
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
               <ProtectedRoutes />
             </BrowserRouter>
           </AppProvider>

@@ -88,7 +88,7 @@ export function Expenses() {
   ], [customersWithExpenses, t]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">

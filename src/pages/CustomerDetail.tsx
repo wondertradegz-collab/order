@@ -58,21 +58,21 @@ export function CustomerDetail() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <Link to="/customers" className="text-sm text-blue-600 hover:text-blue-700 mb-2 inline-block">
+          <Link to="/customers" className="text-sm text-blue-600 hover:text-blue-700 mb-2 inline-flex items-center min-h-[44px]">
             ← {t('common.back')}
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{customer.name}</h1>
           {customer.companyName && (
-            <p className="text-gray-500">{customer.companyName}</p>
+            <p className="text-sm sm:text-base text-gray-500">{customer.companyName}</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(`/quotations/new?customerId=${customer.id}`)}>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="secondary" onClick={() => navigate(`/quotations/new?customerId=${customer.id}`)} className="w-full sm:w-auto min-h-[44px]">
             {t('dashboard.createQuotation')}
           </Button>
-          <Button onClick={() => navigate(`/invoices/new?customerId=${customer.id}`)}>
+          <Button onClick={() => navigate(`/invoices/new?customerId=${customer.id}`)} className="w-full sm:w-auto min-h-[44px]">
             {t('dashboard.createInvoice')}
           </Button>
         </div>
@@ -111,24 +111,24 @@ export function CustomerDetail() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">{t('customers.totalSales')}</p>
-          <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalSales)}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">{t('customers.totalSales')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(stats.totalSales)}</p>
           <p className="text-xs text-gray-400">{stats.receiptCount}{t('common.items')} {t('documents.receipt')}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">{t('reports.invoiced')}</p>
-          <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalInvoiced)}</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">{t('reports.invoiced')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-blue-600">{formatCurrency(stats.totalInvoiced)}</p>
           <p className="text-xs text-gray-400">{stats.invoiceCount}{t('common.items')} {t('documents.invoice')}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">{t('documents.paidAmount')}</p>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalPaid)}</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">{t('documents.paidAmount')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900">{formatCurrency(stats.totalPaid)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">{t('dashboard.unpaid')}</p>
-          <p className="text-2xl font-bold text-orange-600">{formatCurrency(stats.totalUnpaid)}</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+          <p className="text-xs sm:text-sm text-gray-500">{t('dashboard.unpaid')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-orange-600">{formatCurrency(stats.totalUnpaid)}</p>
         </div>
       </div>
 

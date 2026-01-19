@@ -152,10 +152,10 @@ export function DocumentList({ type }: DocumentListProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{typeLabel}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{typeLabel}{t('documents.listSubtitle')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{typeLabel}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{typeLabel}{t('documents.listSubtitle')}</p>
         </div>
-        <Button onClick={() => navigate(`${basePath}/new`)}>
+        <Button onClick={() => navigate(`${basePath}/new`)} className="w-full sm:w-auto min-h-[44px]">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -186,16 +186,16 @@ export function DocumentList({ type }: DocumentListProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex-1 min-w-[180px]">
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <div className="w-full sm:flex-1 sm:min-w-[140px]">
               <DateInput
                 value={dateFrom}
                 onChange={(value) => setDateFrom(value)}
                 placeholder={t('documents.startDate')}
               />
             </div>
-            <span className="text-gray-400">〜</span>
-            <div className="flex-1 min-w-[180px]">
+            <span className="hidden sm:block text-gray-400">〜</span>
+            <div className="w-full sm:flex-1 sm:min-w-[140px]">
               <DateInput
                 value={dateTo}
                 onChange={(value) => setDateTo(value)}
@@ -212,8 +212,8 @@ export function DocumentList({ type }: DocumentListProps) {
       </Card>
 
       {/* Action Bar */}
-      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-4">
           {selectedIds.size > 0 && (
             <>
               <Badge color="blue">{selectedIds.size}{t('documents.itemsSelected')}</Badge>
@@ -221,18 +221,20 @@ export function DocumentList({ type }: DocumentListProps) {
                 variant="danger"
                 size="sm"
                 onClick={() => setShowBulkDeleteConfirm(true)}
+                className="min-h-[44px]"
               >
                 {t('documents.bulkDelete')}
               </Button>
             </>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {(type === 'invoice' || type === 'receipt') && (
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setShowAccountingExport(true)}
+              className="min-h-[44px]"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -243,6 +245,7 @@ export function DocumentList({ type }: DocumentListProps) {
           <Button
             variant="secondary"
             size="sm"
+            className="min-h-[44px]"
             onClick={() => {
               // CSV Export
               const csvHeader = type === 'invoice'

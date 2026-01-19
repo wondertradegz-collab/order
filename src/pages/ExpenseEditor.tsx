@@ -251,16 +251,16 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             {mode === 'create' ? t('expenses.createReport') : t('expenses.editReport')}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
             {t('expenses.subtitle')}
           </p>
         </div>
-        <Button variant="secondary" onClick={() => navigate('/expenses')}>
+        <Button variant="secondary" onClick={() => navigate('/expenses')} className="self-start sm:self-auto min-h-[44px]">
           {t('common.cancel')}
         </Button>
       </div>
@@ -330,8 +330,8 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
           {/* Historical Rate Fetch */}
           <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('expenses.historicalRateFetch')}</p>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+              <div className="w-full sm:flex-1 sm:min-w-[200px]">
                 <DateInput
                   value={rateFetchDate === 'latest' ? getTodayString() : rateFetchDate}
                   onChange={(value) => setRateFetchDate(value || 'latest')}
@@ -342,6 +342,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 size="sm"
                 onClick={() => fetchExchangeRate('specific')}
                 disabled={isFetchingRate || rateFetchDate === 'latest'}
+                className="w-full sm:w-auto min-h-[44px]"
               >
                 {t('expenses.fetchHistoricalRate')}
               </Button>
@@ -359,9 +360,9 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
 
       {/* Expense Items */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h2 className="font-semibold text-gray-900 dark:text-white">{t('documents.lineItems')}</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* 一括画像追加ボタン */}
             <input
               type="file"
@@ -375,13 +376,14 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
               variant="secondary"
               size="sm"
               onClick={() => bulkFileInputRef.current?.click()}
+              className="min-h-[44px]"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {t('common.import')}
             </Button>
-            <Button variant="secondary" size="sm" onClick={addExpenseRow}>
+            <Button variant="secondary" size="sm" onClick={addExpenseRow} className="min-h-[44px]">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -543,17 +545,17 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('documents.lineItems')}: {expenses.length}{t('common.items')}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.exchangeRate')}: {exchangeRate}{t('expenses.yenPerYuan')}</p>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="text-right">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8">
+            <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalRMB')}</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              <p className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
                 {totals.totalRMB.toLocaleString()}{t('common.yuan')}
               </p>
             </div>
-            <div className="text-3xl text-gray-400">→</div>
-            <div className="text-right">
+            <div className="hidden sm:block text-3xl text-gray-400">→</div>
+            <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalJPY')}</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(totals.totalJPY)}
               </p>
             </div>
@@ -574,13 +576,13 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
-        <Button variant="secondary" onClick={() => navigate('/expenses')}>
+        <Button variant="secondary" onClick={() => navigate('/expenses')} className="w-full sm:w-auto min-h-[44px]">
           {t('common.cancel')}
         </Button>
-        <Button variant="secondary" onClick={() => handleSave('draft')}>
+        <Button variant="secondary" onClick={() => handleSave('draft')} className="w-full sm:w-auto min-h-[44px]">
           {t('status.draft')} {t('common.save')}
         </Button>
-        <Button onClick={() => handleSave('completed')}>
+        <Button onClick={() => handleSave('completed')} className="w-full sm:w-auto min-h-[44px]">
           {t('common.confirm')} {t('common.save')}
         </Button>
       </div>

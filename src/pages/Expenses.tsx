@@ -92,10 +92,10 @@ export function Expenses() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('expenses.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('expenses.subtitle')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{t('expenses.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{t('expenses.subtitle')}</p>
         </div>
-        <Button onClick={() => navigate('/expenses/new')}>
+        <Button onClick={() => navigate('/expenses/new')} className="w-full sm:w-auto min-h-[44px]">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -104,22 +104,22 @@ export function Expenses() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('status.draft')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStats.draft}{t('common.items')}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('status.draft')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{totalStats.draft}{t('common.items')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('status.completed')}</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalStats.completed}{t('common.items')}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('status.completed')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{totalStats.completed}{t('common.items')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalRMB')}</p>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalStats.totalRMB.toLocaleString()}{t('common.yuan')}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalRMB')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{totalStats.totalRMB.toLocaleString()}{t('common.yuan')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalJPY')}</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalStats.totalJPY)}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalJPY')}</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalStats.totalJPY)}</p>
         </Card>
       </div>
 
@@ -143,7 +143,7 @@ export function Expenses() {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors ${
                   statusFilter === status
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -178,9 +178,9 @@ export function Expenses() {
         <div className="space-y-3">
           {filteredReports.map((report) => (
             <Card key={report.id} hover className="cursor-pointer" onClick={() => navigate(`/expenses/${report.id}`)}>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                     <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                       {report.name}
                     </h3>
@@ -188,16 +188,16 @@ export function Expenses() {
                       {EXPENSE_REPORT_STATUS_LABELS[report.status]}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     <span>{report.expenses.length}{t('common.items')}</span>
-                    <span>|</span>
+                    <span className="hidden sm:inline">|</span>
                     <span>{t('documents.customer')}: {getCustomerName(report.customerId)}</span>
-                    <span>|</span>
+                    <span className="hidden sm:inline">|</span>
                     <span>{formatDate(report.createdAt)}</span>
                   </div>
                 </div>
-                <div className="text-right ml-4">
-                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                <div className="text-left sm:text-right">
+                  <p className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400">
                     {report.totalRMB.toLocaleString()}{t('common.yuan')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">

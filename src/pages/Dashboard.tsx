@@ -310,17 +310,17 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
+        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card hover className="relative overflow-hidden">
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.monthlyPureRevenue')}</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.thisMonthSales)}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.monthlyPureRevenue')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600 truncate">{formatCurrency(stats.thisMonthSales)}</p>
               {stats.salesChange !== 0 && (
                 <div className={`flex items-center gap-1 mt-2 text-sm ${
                   stats.salesChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
@@ -348,8 +348,8 @@ export function Dashboard() {
                 </div>
               )}
             </div>
-            <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 sm:p-3 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -369,13 +369,13 @@ export function Dashboard() {
 
         <Card hover>
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.unpaid')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.unpaidAmount)}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.unpaid')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{formatCurrency(stats.unpaidAmount)}</p>
               <Badge color="yellow" dot className="mt-2">{stats.unpaidCount}{t('dashboard.items')}</Badge>
             </div>
-            <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 sm:p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -384,15 +384,15 @@ export function Dashboard() {
 
         <Card hover>
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.overdue')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.overdueCount}{t('dashboard.items')}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.overdue')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.overdueCount}{t('dashboard.items')}</p>
               {stats.overdueCount > 0 && (
                 <Badge color="red" dot pulse className="mt-2">{t('dashboard.actionRequired')}</Badge>
               )}
             </div>
-            <div className={`p-3 rounded-xl ${stats.overdueCount > 0 ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-50 dark:bg-gray-700 text-gray-400'}`}>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${stats.overdueCount > 0 ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-50 dark:bg-gray-700 text-gray-400'}`}>
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
@@ -401,12 +401,12 @@ export function Dashboard() {
 
         <Card hover>
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.customerCount')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCustomers}{t('dashboard.items')}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.customerCount')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCustomers}{t('dashboard.items')}</p>
             </div>
-            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 sm:p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
@@ -672,47 +672,47 @@ export function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Link
           to="/quotations/new"
-          className="group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-lg transition-all"
+          className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 min-h-[60px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-lg transition-all"
         >
-          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-            <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createQuotation')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newQuotation')}</p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">{t('dashboard.createQuotation')}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{t('dashboard.newQuotation')}</p>
           </div>
         </Link>
         <Link
           to="/invoices/new"
-          className="group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-lg transition-all"
+          className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 min-h-[60px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-lg transition-all"
         >
-          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-            <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createInvoice')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newInvoice')}</p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">{t('dashboard.createInvoice')}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{t('dashboard.newInvoice')}</p>
           </div>
         </Link>
         <Link
           to="/receipts/new"
-          className="group flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 hover:shadow-lg transition-all"
+          className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 min-h-[60px] bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 hover:shadow-lg transition-all"
         >
-          <div className="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createReceipt')}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newReceipt')}</p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">{t('dashboard.createReceipt')}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{t('dashboard.newReceipt')}</p>
           </div>
         </Link>
       </div>
@@ -737,11 +737,11 @@ export function Dashboard() {
             {incompleteTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <button
                   onClick={() => toggleMemoComplete(task.id)}
-                  className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 flex items-center justify-center transition-colors flex-shrink-0"
+                  className="w-10 h-10 sm:w-5 sm:h-5 rounded border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 flex items-center justify-center transition-colors flex-shrink-0"
                 >
                 </button>
                 <div className="flex-1 min-w-0">
@@ -886,33 +886,33 @@ export function Dashboard() {
       </div>
 
       {/* Document Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card hover className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 mb-3">
-            <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <Card hover className="text-center p-3 sm:p-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 mb-2 sm:mb-3">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.totalQuotations}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.quotation')}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.totalQuotations}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.quotation')}</p>
         </Card>
-        <Card hover className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/50 mb-3">
-            <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Card hover className="text-center p-3 sm:p-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-100 dark:bg-orange-900/50 mb-2 sm:mb-3">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{stats.totalInvoices}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.invoice')}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">{stats.totalInvoices}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.invoice')}</p>
         </Card>
-        <Card hover className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/50 mb-3">
-            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Card hover className="text-center p-3 sm:p-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 dark:bg-green-900/50 mb-2 sm:mb-3">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.totalReceipts}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.receipt')}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{stats.totalReceipts}</p>
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.receipt')}</p>
         </Card>
       </div>
     </div>

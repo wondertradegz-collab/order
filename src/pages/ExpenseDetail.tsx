@@ -99,13 +99,13 @@ export function ExpenseDetail() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{report.name}</h1>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{report.name}</h1>
             <Badge color={getStatusColor(report.status)}>
               {EXPENSE_REPORT_STATUS_LABELS[report.status]}
             </Badge>
           </div>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
             {t('common.date')}: {formatDate(report.createdAt)}
             {customer && ` | ${t('documents.customer')}: ${customer.companyName || customer.name}`}
           </p>
@@ -113,44 +113,44 @@ export function ExpenseDetail() {
         <div className="flex gap-2 flex-wrap">
           {report.status !== 'invoiced' && (
             <>
-              <Button variant="secondary" onClick={() => navigate(`/expenses/${report.id}/edit`)}>
+              <Button variant="secondary" onClick={() => navigate(`/expenses/${report.id}/edit`)} className="min-h-[44px]">
                 {t('common.edit')}
               </Button>
               {report.status === 'draft' && (
-                <Button variant="secondary" onClick={() => handleStatusChange('completed')}>
+                <Button variant="secondary" onClick={() => handleStatusChange('completed')} className="min-h-[44px]">
                   {t('common.confirm')}
                 </Button>
               )}
               {report.status === 'completed' && (
-                <Button onClick={() => setShowAddToInvoiceModal(true)}>
+                <Button onClick={() => setShowAddToInvoiceModal(true)} className="min-h-[44px]">
                   {t('expenses.addToInvoice')}
                 </Button>
               )}
             </>
           )}
-          <Button variant="danger" onClick={handleDelete}>
+          <Button variant="danger" onClick={handleDelete} className="min-h-[44px]">
             {t('common.delete')}
           </Button>
         </div>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="bg-orange-50 dark:bg-orange-900/20">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.totalRMB')}</p>
-          <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+          <p className="text-2xl sm:text-3xl font-bold text-orange-600 dark:text-orange-400">
             {report.totalRMB.toLocaleString()}{t('common.yuan')}
           </p>
         </Card>
         <Card className="bg-blue-50 dark:bg-blue-900/20">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.exchangeRate')}</p>
-          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+          <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
             {report.exchangeRate}{t('expenses.yenPerYuan')}
           </p>
         </Card>
         <Card className="bg-green-50 dark:bg-green-900/20">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.totalJPY')}</p>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+          <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(report.totalJPY)}
           </p>
         </Card>
@@ -291,11 +291,11 @@ export function ExpenseDetail() {
             placeholder={`${report.totalRMB}${t('common.yuan')} × ${report.exchangeRate}${t('expenses.yenPerYuan')}`}
           />
 
-          <div className="flex justify-end gap-3 mt-6">
-            <Button variant="secondary" onClick={() => setShowAddToInvoiceModal(false)}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+            <Button variant="secondary" onClick={() => setShowAddToInvoiceModal(false)} className="w-full sm:w-auto min-h-[44px]">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleAddToInvoice}>
+            <Button onClick={handleAddToInvoice} className="w-full sm:w-auto min-h-[44px]">
               {t('expenses.addToInvoice')}
             </Button>
           </div>

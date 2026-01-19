@@ -193,16 +193,16 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
             <Link
               to={basePath}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">{document.documentNumber}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{document.documentNumber}</h1>
             <span
               className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
                 document.status
@@ -211,46 +211,46 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               {getStatusLabel(document.status)}
             </span>
           </div>
-          <p className="text-gray-500">
+          <p className="text-sm sm:text-base text-gray-500">
             {customer?.companyName || customer?.name || t('common.unknown')} | {formatDate(document.issueDate)}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setShowPreview(true)}>
+          <Button variant="secondary" onClick={() => setShowPreview(true)} className="min-h-[44px]">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
             {t('common.preview')}
           </Button>
-          <Button variant="secondary" onClick={handlePrint}>
+          <Button variant="secondary" onClick={handlePrint} className="min-h-[44px]">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             {t('common.print')}
           </Button>
-          <Button variant="primary" onClick={handleDownloadPDF}>
+          <Button variant="primary" onClick={handleDownloadPDF} className="min-h-[44px]">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             {t('documents.pdfExport')}
           </Button>
-          <Button variant="secondary" onClick={handleSendEmail}>
+          <Button variant="secondary" onClick={handleSendEmail} className="min-h-[44px]">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             {t('documents.sendEmail')}
           </Button>
           <Link to={`${basePath}/${document.id}/edit`}>
-            <Button variant="secondary">
+            <Button variant="secondary" className="min-h-[44px]">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               {t('common.edit')}
             </Button>
           </Link>
-          <Button variant="secondary" onClick={handleDuplicate}>
+          <Button variant="secondary" onClick={handleDuplicate} className="min-h-[44px]">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -265,9 +265,9 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
         <div className="lg:col-span-2 space-y-6">
           {/* Summary */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
               <h2 className="text-lg font-semibold text-gray-900">{t('common.amount')}</h2>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(document.total)}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatCurrency(document.total)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -500,12 +500,12 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
             stamps={settings.stamps || []}
           />
         </div>
-        <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
-          <Button variant="secondary" onClick={() => setShowPreview(false)}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-4 pt-4 border-t">
+          <Button variant="secondary" onClick={() => setShowPreview(false)} className="w-full sm:w-auto min-h-[44px]">
             {t('common.close')}
           </Button>
-          <Button variant="secondary" onClick={handlePrint}>{t('common.print')}</Button>
-          <Button onClick={handleDownloadPDF}>{t('documents.pdfExport')}</Button>
+          <Button variant="secondary" onClick={handlePrint} className="w-full sm:w-auto min-h-[44px]">{t('common.print')}</Button>
+          <Button onClick={handleDownloadPDF} className="w-full sm:w-auto min-h-[44px]">{t('documents.pdfExport')}</Button>
         </div>
       </Modal>
 
@@ -529,11 +529,11 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
             value={paymentDate}
             onChange={(value) => setPaymentDate(value)}
           />
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="w-full sm:w-auto min-h-[44px]">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleRecordPayment}>{t('common.save')}</Button>
+            <Button onClick={handleRecordPayment} className="w-full sm:w-auto min-h-[44px]">{t('common.save')}</Button>
           </div>
         </div>
       </Modal>
@@ -567,11 +567,11 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               onChange={setConvertPaymentMethod}
             />
           )}
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => setShowConvertModal(false)}>
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+            <Button variant="secondary" onClick={() => setShowConvertModal(false)} className="w-full sm:w-auto min-h-[44px]">
               {t('common.cancel')}
             </Button>
-            <Button onClick={type === 'quotation' ? handleConvertToInvoice : handleConvertToReceipt}>
+            <Button onClick={type === 'quotation' ? handleConvertToInvoice : handleConvertToReceipt} className="w-full sm:w-auto min-h-[44px]">
               {type === 'quotation' ? t('documents.convertToInvoice') : t('documents.issueReceipt')}
             </Button>
           </div>

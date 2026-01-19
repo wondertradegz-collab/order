@@ -54,10 +54,10 @@ export function Products() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('products.title')}</h1>
-          <p className="text-gray-500 mt-1">{t('products.subtitle')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('products.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">{t('products.subtitle')}</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
+        <Button onClick={() => handleOpenModal()} className="w-full sm:w-auto min-h-[44px]">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -158,17 +158,17 @@ export function Products() {
           <div className="md:hidden divide-y divide-gray-200">
             {filteredProducts.map((product) => (
               <div key={product.id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900">{product.name}</p>
                     {product.description && (
-                      <p className="text-sm text-gray-500">{product.description}</p>
+                      <p className="text-sm text-gray-500 truncate">{product.description}</p>
                     )}
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleOpenModal(product)}
-                      className="p-2 text-gray-400 hover:text-blue-600"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -176,7 +176,7 @@ export function Products() {
                     </button>
                     <button
                       onClick={() => setDeleteTarget(product)}
-                      className="p-2 text-gray-400 hover:text-red-600"
+                      className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -184,7 +184,7 @@ export function Products() {
                     </button>
                   </div>
                 </div>
-                <div className="mt-2 flex gap-4 text-sm">
+                <div className="mt-2 flex flex-wrap gap-4 text-sm">
                   <span className="text-gray-500">{product.unit || '-'}</span>
                   <span className="font-medium text-gray-900">{formatCurrency(product.unitPrice)}</span>
                   <span className="text-gray-500">{product.taxRate}%</span>
@@ -286,7 +286,7 @@ function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: 
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             label={t('common.quantity')}
             value={formData.unit}
@@ -310,11 +310,11 @@ function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: 
             onChange={(val) => setFormData({ ...formData, taxRate: parseInt(val) })}
           />
         </div>
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto min-h-[44px]">
             {t('common.cancel')}
           </Button>
-          <Button type="submit">
+          <Button type="submit" className="w-full sm:w-auto min-h-[44px]">
             {product ? t('common.save') : t('common.add')}
           </Button>
         </div>

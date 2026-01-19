@@ -201,18 +201,18 @@ export function ExpenseSplitEditor({ mode }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             {mode === 'create' ? t('expenseSplit.create') : t('expenseSplit.edit')}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('expenseSplit.subtitle')}</p>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{t('expenseSplit.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate('/expense-splits')}>
+          <Button variant="secondary" onClick={() => navigate('/expense-splits')} className="flex-1 sm:flex-none min-h-[44px]">
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSave} disabled={!name || participants.length === 0}>
+          <Button onClick={handleSave} disabled={!name || participants.length === 0} className="flex-1 sm:flex-none min-h-[44px]">
             {t('common.save')}
           </Button>
         </div>
@@ -255,10 +255,10 @@ export function ExpenseSplitEditor({ mode }: Props) {
       </div>
 
       {/* Participants */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('expenseSplit.participants')}</h2>
-          <Button size="sm" onClick={() => { setEditingParticipant(null); setIsParticipantModalOpen(true); }}>
+          <Button size="sm" onClick={() => { setEditingParticipant(null); setIsParticipantModalOpen(true); }} className="w-full sm:w-auto min-h-[44px]">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -370,13 +370,14 @@ export function ExpenseSplitEditor({ mode }: Props) {
       </div>
 
       {/* Expense Items */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('expenseSplit.expenseItems')}</h2>
           <Button
             size="sm"
             onClick={() => { setEditingItem(null); setIsItemModalOpen(true); }}
             disabled={participants.length === 0}
+            className="w-full sm:w-auto min-h-[44px]"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -532,11 +533,11 @@ export function ExpenseSplitEditor({ mode }: Props) {
             onChange={(e) => setInvoiceNotes(e.target.value)}
             placeholder={t('expenseSplit.invoiceNotesPlaceholder')}
           />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsInvoiceModalOpen(false)}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => setIsInvoiceModalOpen(false)} className="w-full sm:w-auto min-h-[44px]">
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleGenerateInvoice} disabled={!invoiceDueDate}>
+            <Button onClick={handleGenerateInvoice} disabled={!invoiceDueDate} className="w-full sm:w-auto min-h-[44px]">
               {t('expenseSplit.generateInvoice')}
             </Button>
           </div>
@@ -630,11 +631,11 @@ function ParticipantModal({ isOpen, onClose, onSave, participant, customers, t }
             {t('expenseSplit.customerLinkHelp')}
           </p>
         </div>
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto min-h-[44px]">
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={!name}>
+          <Button type="submit" disabled={!name} className="w-full sm:w-auto min-h-[44px]">
             {participant ? t('common.save') : t('common.add')}
           </Button>
         </div>
@@ -816,11 +817,11 @@ function ItemModal({ isOpen, onClose, onSave, item, participants, t }: ItemModal
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto min-h-[44px]">
             {t('common.cancel')}
           </Button>
-          <Button type="submit" disabled={!isValid}>
+          <Button type="submit" disabled={!isValid} className="w-full sm:w-auto min-h-[44px]">
             {item ? t('common.save') : t('common.add')}
           </Button>
         </div>

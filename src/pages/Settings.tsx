@@ -162,12 +162,12 @@ const PasswordSettingsSection = () => {
         )}
 
         <div className="flex gap-3">
-          <Button type="submit">{labels.changePassword}</Button>
+          <Button type="submit" className="min-h-[44px] w-full sm:w-auto">{labels.changePassword}</Button>
         </div>
       </form>
 
       <div className="mt-6 pt-4 border-t dark:border-gray-600">
-        <Button variant="secondary" onClick={logout}>
+        <Button variant="secondary" onClick={logout} className="min-h-[44px] w-full sm:w-auto">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
@@ -380,11 +380,11 @@ const AutoBackupSection = () => {
         )}
 
         {/* ボタン */}
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={handleSave}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleSave} className="min-h-[44px] w-full sm:w-auto">
             {labels.saveSettings}
           </Button>
-          <Button variant="secondary" onClick={handleSendNow} disabled={isSending || !settings.email}>
+          <Button variant="secondary" onClick={handleSendNow} disabled={isSending || !settings.email} className="min-h-[44px] w-full sm:w-auto">
             {isSending ? (
               <>
                 <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
@@ -483,8 +483,8 @@ const DataManagementSection = () => {
         </div>
 
         {/* Export/Import Buttons */}
-        <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={handleExport}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button variant="secondary" onClick={handleExport} className="min-h-[44px] w-full sm:w-auto">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -493,6 +493,7 @@ const DataManagementSection = () => {
           <Button
             variant="secondary"
             onClick={() => fileInputRef.current?.click()}
+            className="min-h-[44px] w-full sm:w-auto"
           >
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -545,11 +546,11 @@ const DataManagementSection = () => {
                 {labels.restoreWarning}
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button onClick={handleRestore} disabled={isRestoring}>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleRestore} disabled={isRestoring} className="min-h-[44px] w-full sm:w-auto">
                 {isRestoring ? labels.restoring : labels.restoreThis}
               </Button>
-              <Button variant="secondary" onClick={() => setBackupPreview(null)}>
+              <Button variant="secondary" onClick={() => setBackupPreview(null)} className="min-h-[44px] w-full sm:w-auto">
                 {t('common.cancel')}
               </Button>
             </div>
@@ -602,7 +603,7 @@ const AppSettingsSection = () => {
                 <button
                   key={lang.value}
                   onClick={() => setLanguage(lang.value)}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                  className={`px-4 py-2 min-h-[44px] rounded-lg text-sm transition-colors ${
                     language === lang.value
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-transparent hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -653,7 +654,7 @@ const AppSettingsSection = () => {
                 {labels.help}
               </div>
             </label>
-            <Button variant="secondary" onClick={() => setIsManualOpen(true)}>
+            <Button variant="secondary" onClick={() => setIsManualOpen(true)} className="min-h-[44px] w-full sm:w-auto">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
@@ -819,8 +820,8 @@ export function Settings() {
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{labels.title}</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">{labels.subtitle}</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{labels.title}</h1>
+        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{labels.subtitle}</p>
       </div>
 
       {/* App Settings (Language, Theme, Manual) */}
@@ -1352,7 +1353,7 @@ export function Settings() {
               } : newStamp} />
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-col sm:flex-row gap-2 mt-4">
             {editingStamp ? (
               <>
                 <Button
@@ -1362,10 +1363,11 @@ export function Settings() {
                     }
                     setEditingStamp(null);
                   }}
+                  className="min-h-[44px] w-full sm:w-auto"
                 >
                   {t('common.save')}
                 </Button>
-                <Button variant="secondary" onClick={() => setEditingStamp(null)}>
+                <Button variant="secondary" onClick={() => setEditingStamp(null)} className="min-h-[44px] w-full sm:w-auto">
                   {t('common.cancel')}
                 </Button>
               </>
@@ -1386,6 +1388,7 @@ export function Settings() {
                     showDate: true,
                   });
                 }}
+                className="min-h-[44px] w-full sm:w-auto"
               >
                 {labels.addStamp}
               </Button>
@@ -1421,7 +1424,7 @@ export function Settings() {
                       deleteTemplate(template.id);
                     }
                   }}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1448,19 +1451,19 @@ export function Settings() {
       <DataManagementSection />
 
       {/* Save Button */}
-      <div className="flex items-center justify-end gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4">
         {saved && (
-          <span className="text-green-600 flex items-center gap-2">
+          <span className="text-green-600 flex items-center justify-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             {labels.saved}
           </span>
         )}
-        <Button variant="secondary" onClick={handleReset}>
+        <Button variant="secondary" onClick={handleReset} className="min-h-[44px] w-full sm:w-auto">
           {labels.reset}
         </Button>
-        <Button onClick={handleSave}>
+        <Button onClick={handleSave} className="min-h-[44px] w-full sm:w-auto">
           {t('common.save')}
         </Button>
       </div>

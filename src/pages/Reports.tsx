@@ -371,19 +371,19 @@ export function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('reports.overview')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{t('reports.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{t('reports.overview')}</p>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex gap-4 overflow-x-auto">
+        <nav className="flex gap-2 sm:gap-4 overflow-x-auto pb-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 min-h-[44px] text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -400,8 +400,8 @@ export function Reports() {
         <>
           {/* Period Selector */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="w-40">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:items-end">
+              <div className="w-full sm:w-40">
                 <Select
                   label={t('reports.period')}
                   options={[
@@ -416,14 +416,14 @@ export function Reports() {
               </div>
               {period === 'custom' && (
                 <>
-                  <div className="min-w-[200px]">
+                  <div className="w-full sm:w-auto sm:min-w-[160px]">
                     <DateInput
                       label={t('reports.startDate')}
                       value={customStart}
                       onChange={(value) => setCustomStart(value)}
                     />
                   </div>
-                  <div className="min-w-[200px]">
+                  <div className="w-full sm:w-auto sm:min-w-[160px]">
                     <DateInput
                       label={t('reports.endDate')}
                       value={customEnd}
@@ -439,24 +439,24 @@ export function Reports() {
           </div>
 
           {/* Summary Cards - Main */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.pureRevenue')} ({t('documents.receipt')})</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.receiptTotals.revenue - stats.receiptTotals.discount)}</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('reports.pureRevenue')} ({t('documents.receipt')})</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.receiptTotals.revenue - stats.receiptTotals.discount)}</p>
               <p className="text-xs text-gray-400 mt-1">{stats.receiptCount}{t('common.items')}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.invoiced')}</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(stats.invoiceTotals.revenue - stats.invoiceTotals.discount)}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('reports.invoiced')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-blue-600 mt-1">{formatCurrency(stats.invoiceTotals.revenue - stats.invoiceTotals.discount)}</p>
               <p className="text-xs text-gray-400 mt-1">{stats.invoiceCount}{t('common.items')}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.collected')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(stats.totalPaid)}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('reports.collected')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(stats.totalPaid)}</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.outstanding')}</p>
-              <p className="text-2xl font-bold text-orange-600 mt-1">{formatCurrency(stats.totalUnpaid)}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('reports.outstanding')}</p>
+              <p className="text-lg sm:text-2xl font-bold text-orange-600 mt-1">{formatCurrency(stats.totalUnpaid)}</p>
             </div>
           </div>
 
@@ -821,16 +821,17 @@ export function Reports() {
 
             {/* Goal Setting */}
             <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ja' ? '目標金額' : language === 'zh' ? '目标金额' : 'Target Amount'}</span>
                 {!editingGoal ? (
-                  <Button variant="secondary" size="sm" onClick={() => setEditingGoal(true)}>
+                  <Button variant="secondary" size="sm" onClick={() => setEditingGoal(true)} className="w-full sm:w-auto min-h-[44px]">
                     {t('common.edit')}
                   </Button>
                 ) : (
                   <div className="flex gap-2">
                     <Button
                       size="sm"
+                      className="flex-1 sm:flex-none min-h-[44px]"
                       onClick={() => {
                         setMonthlyGoal(parseInt(tempGoal) || 0);
                         setEditingGoal(false);
@@ -838,7 +839,7 @@ export function Reports() {
                     >
                       {t('common.save')}
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => setEditingGoal(false)}>
+                    <Button variant="secondary" size="sm" onClick={() => setEditingGoal(false)} className="flex-1 sm:flex-none min-h-[44px]">
                       {t('common.cancel')}
                     </Button>
                   </div>

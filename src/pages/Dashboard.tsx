@@ -2,9 +2,23 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Card, CardHeader, Badge, ChipGroup, Carousel, EmptyState } from '../components/common';
 import type { Invoice, Receipt, LineItem } from '../types';
+import {
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 
 // カテゴリ別の金額計算ヘルパー
 function calculateCategoryTotals(items: LineItem[]) {
@@ -44,6 +58,7 @@ function calculateCategoryTotals(items: LineItem[]) {
 export function Dashboard() {
   const { documents, customers, memos, toggleMemoComplete } = useApp();
   const { t } = useLanguage();
+  const { isDarkMode } = useTheme();
   const [quickFilter, setQuickFilter] = useState<string>('all');
 
   const stats = useMemo(() => {
@@ -121,6 +136,70 @@ export function Dashboard() {
       totalCustomers: customers.length,
     };
   }, [documents, customers]);
+
+  // Chart data - Monthly sales trend (past 6 months)
+  const chartData = useMemo(() => {
+    const receipts = documents.filter((d) => d.type === 'receipt') as Receipt[];
+    const invoices = documents.filter((d) => d.type === 'invoice') as Invoice[];
+    const today = new Date();
+
+    // Monthly sales data for the past 6 months
+    const monthlySales: { name: string; sales: number; invoiced: number; month: number; year: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+      const monthName = targetDate.toLocaleDateString('ja-JP', { month: 'short' });
+
+      const monthReceipts = receipts.filter((r) => {
+        const date = new Date(r.createdAt);
+        return date >= targetDate && date < nextMonth;
+      });
+
+      const monthInvoices = invoices.filter((inv) => {
+        const date = new Date(inv.createdAt);
+        return date >= targetDate && date < nextMonth;
+      });
+
+      const sales = monthReceipts.reduce((sum, r) => {
+        const categoryTotals = calculateCategoryTotals(r.items);
+        return sum + categoryTotals.netRevenue;
+      }, 0);
+
+      const invoiced = monthInvoices.reduce((sum, inv) => sum + inv.total, 0);
+
+      monthlySales.push({
+        name: monthName,
+        sales,
+        invoiced,
+        month: targetDate.getMonth(),
+        year: targetDate.getFullYear(),
+      });
+    }
+
+    // Document type breakdown (pie chart)
+    const quotationCount = documents.filter((d) => d.type === 'quotation').length;
+    const invoiceCount = invoices.length;
+    const receiptCount = receipts.length;
+
+    const documentBreakdown = [
+      { name: '見積書', value: quotationCount, color: '#8b5cf6' },
+      { name: '請求書', value: invoiceCount, color: '#f97316' },
+      { name: '領収書', value: receiptCount, color: '#22c55e' },
+    ].filter(item => item.value > 0);
+
+    // Payment status breakdown (pie chart)
+    const paidInvoices = invoices.filter(i => i.status === 'paid').length;
+    const unpaidInvoices = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').length;
+    const cancelledInvoices = invoices.filter(i => i.status === 'cancelled').length;
+
+    const paymentStatus = [
+      { name: '入金済', value: paidInvoices, color: '#22c55e' },
+      { name: '未入金', value: unpaidInvoices, color: '#f97316' },
+      { name: 'キャンセル', value: cancelledInvoices, color: '#94a3b8' },
+    ].filter(item => item.value > 0);
+
+    return { monthlySales, documentBreakdown, paymentStatus };
+  }, [documents]);
 
   const recentDocuments = useMemo(() => {
     let filtered = [...documents];
@@ -400,6 +479,192 @@ export function Dashboard() {
           </div>
         ))}
       </Carousel>
+
+      {/* Sales Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Sales Trend */}
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="月次売上推移"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            }
+          />
+          {chartData.monthlySales.some(m => m.sales > 0 || m.invoiced > 0) ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData.monthlySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorInvoiced" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis
+                    dataKey="name"
+                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'}
+                    fontSize={12}
+                    tickFormatter={(value) => value >= 10000 ? `${(value / 10000).toFixed(0)}万` : value}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                      border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: isDarkMode ? '#ffffff' : '#111827' }}
+                    formatter={(value, name) => [
+                      formatCurrency(Number(value) || 0),
+                      name === 'sales' ? '売上（入金済）' : '請求額'
+                    ]}
+                  />
+                  <Legend
+                    formatter={(value) => value === 'sales' ? '売上（入金済）' : '請求額'}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorSales)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="invoiced"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorInvoiced)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="text-center">
+                <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p>データがありません</p>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Document & Payment Status */}
+        <Card>
+          <CardHeader
+            title="書類・入金状況"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+              </svg>
+            }
+          />
+          <div className="space-y-6">
+            {/* Document Breakdown */}
+            {chartData.documentBreakdown.length > 0 ? (
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">書類種別</p>
+                <div className="h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData.documentBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartData.documentBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                          border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+                          borderRadius: '8px',
+                        }}
+                        formatter={(value, name) => [`${value}件`, String(name)]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 text-xs">
+                  {chartData.documentBreakdown.map((item) => (
+                    <div key={item.name} className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 dark:text-gray-400">{item.name}: {item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                <p className="text-sm">書類がありません</p>
+              </div>
+            )}
+
+            {/* Payment Status */}
+            {chartData.paymentStatus.length > 0 && (
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">請求書入金状況</p>
+                <div className="h-32">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData.paymentStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {chartData.paymentStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                          border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+                          borderRadius: '8px',
+                        }}
+                        formatter={(value, name) => [`${value}件`, String(name)]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 text-xs">
+                  {chartData.paymentStatus.map((item) => (
+                    <div key={item.name} className="flex items-center gap-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 dark:text-gray-400">{item.name}: {item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

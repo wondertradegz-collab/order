@@ -9,6 +9,7 @@ interface DateInputProps {
   required?: boolean;
   min?: string;
   max?: string;
+  hideCalendarButton?: boolean;
 }
 
 // 日付文字列を正規化（YYYY-MM-DD形式に変換）
@@ -83,37 +84,21 @@ export function DateInput({
   required,
   min,
   max,
+  hideCalendarButton = false,
 }: DateInputProps) {
   const [textValue, setTextValue] = useState(formatForDisplay(value));
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [inputMode, setInputMode] = useState<'text' | 'calendar'>('text');
   const [error, setError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const calendarInputRef = useRef<HTMLInputElement>(null);
+  const hiddenDateInputRef = useRef<HTMLInputElement>(null);
 
   // 外部からvalueが変更された場合に同期
   useEffect(() => {
     setTextValue(formatForDisplay(value));
   }, [value]);
 
-  // 外部クリックでカレンダーを閉じる
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsCalendarOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setTextValue(newValue);
     setError(null);
-
-    // 入力中は変換しない（フォーカスが外れた時に変換）
   };
 
   const handleTextBlur = () => {
@@ -137,20 +122,25 @@ export function DateInput({
     onChange(newValue);
     setTextValue(formatForDisplay(newValue));
     setError(null);
-    setIsCalendarOpen(false);
   };
 
-  const toggleCalendar = () => {
-    setIsCalendarOpen(!isCalendarOpen);
-    if (!isCalendarOpen) {
-      setTimeout(() => {
-        calendarInputRef.current?.showPicker?.();
-      }, 50);
+  const openCalendar = () => {
+    const input = hiddenDateInputRef.current;
+    if (!input) return;
+
+    // showPicker() APIを試す（対応ブラウザ）
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+        return;
+      }
+    } catch {
+      // showPicker()が失敗した場合はfocusにフォールバック
     }
-  };
 
-  const switchMode = () => {
-    setInputMode(inputMode === 'text' ? 'calendar' : 'text');
+    // フォールバック：focusでカレンダーを開く
+    input.focus();
+    input.click();
   };
 
   return (
@@ -161,39 +151,28 @@ export function DateInput({
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
-      <div ref={containerRef} className="relative">
+      <div className="relative">
         <div className="flex gap-1">
-          {/* メイン入力エリア */}
-          {inputMode === 'text' ? (
-            <input
-              type="text"
-              value={textValue}
-              onChange={handleTextChange}
-              onBlur={handleTextBlur}
-              placeholder={placeholder}
-              className={`flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
-                error
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'
-              } focus:outline-none focus:ring-2`}
-            />
-          ) : (
-            <input
-              type="date"
-              value={value}
-              onChange={handleCalendarChange}
-              min={min}
-              max={max}
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          )}
+          {/* テキスト入力 */}
+          <input
+            type="text"
+            value={textValue}
+            onChange={handleTextChange}
+            onBlur={handleTextBlur}
+            placeholder={placeholder}
+            className={`flex-1 min-w-0 px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${
+              error
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-200 dark:border-gray-600 focus:ring-blue-500'
+            } focus:outline-none focus:ring-2`}
+          />
 
-          {/* カレンダーボタン（テキストモード時のみ） */}
-          {inputMode === 'text' && (
+          {/* カレンダーボタン */}
+          {!hideCalendarButton && (
             <button
               type="button"
-              onClick={toggleCalendar}
-              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
+              onClick={openCalendar}
+              className="flex-shrink-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
               title="カレンダーから選択"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,39 +181,19 @@ export function DateInput({
             </button>
           )}
 
-          {/* モード切替ボタン */}
-          <button
-            type="button"
-            onClick={switchMode}
-            className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors text-xs"
-            title={inputMode === 'text' ? 'カレンダー入力に切替' : 'テキスト入力に切替'}
-          >
-            {inputMode === 'text' ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            )}
-          </button>
+          {/* 隠しdate input（カレンダーボタン用） */}
+          <input
+            ref={hiddenDateInputRef}
+            type="date"
+            value={value}
+            onChange={handleCalendarChange}
+            min={min}
+            max={max}
+            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
         </div>
-
-        {/* カレンダーポップアップ（テキストモードでカレンダーボタン押下時） */}
-        {isCalendarOpen && inputMode === 'text' && (
-          <div className="absolute z-50 mt-1 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600">
-            <input
-              ref={calendarInputRef}
-              type="date"
-              value={value}
-              onChange={handleCalendarChange}
-              min={min}
-              max={max}
-              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-        )}
       </div>
 
       {/* エラーメッセージ */}
@@ -243,7 +202,7 @@ export function DateInput({
       )}
 
       {/* ヒント */}
-      {inputMode === 'text' && !error && (
+      {!error && (
         <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
           例: 2024/01/15, 2024-01-15, 2024年1月15日
         </p>

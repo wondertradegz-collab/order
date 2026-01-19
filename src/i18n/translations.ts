@@ -280,7 +280,7 @@ export const translations = {
     noExpenses: { ja: '経費レポートがありません', zh: '没有费用报告', en: 'No expense reports' },
     addFirstExpense: { ja: '最初の経費レポートを作成しましょう', zh: '创建您的第一个费用报告', en: 'Create your first expense report' },
     apiUnavailable: { ja: '為替レートAPIに接続できません', zh: '无法连接汇率API', en: 'Exchange rate API unavailable' },
-    usingEstimatedRate: { ja: '概算レート（1元≈21.5円）を使用中です。正確な計算には手動でレートを入力してください。', zh: '正在使用估算汇率（1元≈21.5日元）。如需精确计算，请手动输入汇率。', en: 'Using estimated rate (1 CNY ≈ 21.5 JPY). For accurate calculations, please enter the rate manually.' },
+    usingEstimatedRate: { ja: '概算レート（1元≈21.8円）を使用中です。正確な計算には手動でレートを入力してください。', zh: '正在使用估算汇率（1元≈21.8日元）。如需精确计算，请手动输入汇率。', en: 'Using estimated rate (1 CNY ≈ 21.8 JPY). For accurate calculations, please enter the rate manually.' },
     categories: {
       transportation: { ja: '交通費', zh: '交通费', en: 'Transportation' },
       accommodation: { ja: '宿泊費', zh: '住宿费', en: 'Accommodation' },

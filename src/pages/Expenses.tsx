@@ -88,14 +88,14 @@ export function Expenses() {
   ], [customersWithExpenses, t]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{t('expenses.title')}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{t('expenses.subtitle')}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{t('expenses.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1 truncate">{t('expenses.subtitle')}</p>
         </div>
-        <Button onClick={() => navigate('/expenses/new')} className="w-full sm:w-auto min-h-[44px]">
+        <Button onClick={() => navigate('/expenses/new')} className="w-full sm:w-auto min-h-[44px] flex-shrink-0">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>

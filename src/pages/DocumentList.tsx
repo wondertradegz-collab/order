@@ -148,14 +148,14 @@ export function DocumentList({ type }: DocumentListProps) {
   }, [documents, type, statusOptions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{typeLabel}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">{typeLabel}{t('documents.listSubtitle')}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{typeLabel}</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1 truncate">{typeLabel}{t('documents.listSubtitle')}</p>
         </div>
-        <Button onClick={() => navigate(`${basePath}/new`)} className="w-full sm:w-auto min-h-[44px]">
+        <Button onClick={() => navigate(`${basePath}/new`)} className="w-full sm:w-auto min-h-[44px] flex-shrink-0">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -164,7 +164,7 @@ export function DocumentList({ type }: DocumentListProps) {
       </div>
 
       {/* Status Filter Chips */}
-      <div className="overflow-x-auto pb-2">
+      <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         <ChipGroup
           options={statusOptions.map((opt) => ({
             value: opt.value,
@@ -178,7 +178,7 @@ export function DocumentList({ type }: DocumentListProps) {
 
       {/* Filters */}
       <Card padding="sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
           <div className="lg:col-span-2">
             <Input
               placeholder={t('documents.searchPlaceholder')}
@@ -186,16 +186,16 @@ export function DocumentList({ type }: DocumentListProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-            <div className="w-full sm:flex-1 sm:min-w-[140px]">
+          <div className="space-y-2 sm:space-y-0 sm:flex sm:flex-row sm:gap-2 sm:items-center">
+            <div className="w-full sm:flex-1">
               <DateInput
                 value={dateFrom}
                 onChange={(value) => setDateFrom(value)}
                 placeholder={t('documents.startDate')}
               />
             </div>
-            <span className="hidden sm:block text-gray-400">〜</span>
-            <div className="w-full sm:flex-1 sm:min-w-[140px]">
+            <span className="hidden sm:block text-gray-400 flex-shrink-0">〜</span>
+            <div className="w-full sm:flex-1">
               <DateInput
                 value={dateTo}
                 onChange={(value) => setDateTo(value)}
@@ -203,96 +203,100 @@ export function DocumentList({ type }: DocumentListProps) {
               />
             </div>
           </div>
-          <Select
-            options={sortOptions}
-            value={sortBy}
-            onChange={(val) => setSortBy(val as SortOption)}
-          />
+          <div className="w-full">
+            <Select
+              options={sortOptions}
+              value={sortBy}
+              onChange={(val) => setSortBy(val as SortOption)}
+            />
+          </div>
         </div>
       </Card>
 
       {/* Action Bar */}
-      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-4">
-          {selectedIds.size > 0 && (
-            <>
-              <Badge color="blue">{selectedIds.size}{t('documents.itemsSelected')}</Badge>
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 sm:px-4 py-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            {selectedIds.size > 0 && (
+              <>
+                <Badge color="blue">{selectedIds.size}{t('documents.itemsSelected')}</Badge>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  className="min-h-[44px]"
+                >
+                  {t('documents.bulkDelete')}
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            {(type === 'invoice' || type === 'receipt') && (
               <Button
-                variant="danger"
+                variant="secondary"
                 size="sm"
-                onClick={() => setShowBulkDeleteConfirm(true)}
-                className="min-h-[44px]"
+                onClick={() => setShowAccountingExport(true)}
+                className="min-h-[44px] w-full sm:w-auto"
               >
-                {t('documents.bulkDelete')}
+                <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span className="truncate">{t('documents.accountingExport')}</span>
               </Button>
-            </>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {(type === 'invoice' || type === 'receipt') && (
+            )}
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => setShowAccountingExport(true)}
-              className="min-h-[44px]"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              {t('documents.accountingExport')}
-            </Button>
-          )}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="min-h-[44px]"
-            onClick={() => {
-              // CSV Export
-              const csvHeader = type === 'invoice'
-                ? [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('documents.dueDate'), t('common.amount'), t('documents.paidAmount'), t('common.status')]
-                : [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('common.amount'), t('common.status')];
+              className="min-h-[44px] w-full sm:w-auto"
+              onClick={() => {
+                // CSV Export
+                const csvHeader = type === 'invoice'
+                  ? [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('documents.dueDate'), t('common.amount'), t('documents.paidAmount'), t('common.status')]
+                  : [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('common.amount'), t('common.status')];
 
-              const csvRows = filteredDocuments.map((doc) => {
-                const customerName = getCustomerName(doc.customerId);
-                if (type === 'invoice') {
-                  const inv = doc as Invoice;
+                const csvRows = filteredDocuments.map((doc) => {
+                  const customerName = getCustomerName(doc.customerId);
+                  if (type === 'invoice') {
+                    const inv = doc as Invoice;
+                    return [
+                      doc.documentNumber,
+                      customerName,
+                      doc.issueDate,
+                      inv.dueDate,
+                      doc.total,
+                      inv.paidAmount,
+                      getStatusLabel(doc.status),
+                    ];
+                  }
                   return [
                     doc.documentNumber,
                     customerName,
                     doc.issueDate,
-                    inv.dueDate,
                     doc.total,
-                    inv.paidAmount,
                     getStatusLabel(doc.status),
                   ];
-                }
-                return [
-                  doc.documentNumber,
-                  customerName,
-                  doc.issueDate,
-                  doc.total,
-                  getStatusLabel(doc.status),
-                ];
-              });
+                });
 
-              const csvContent = [csvHeader, ...csvRows]
-                .map((row) => row.map((cell) => `"${cell}"`).join(','))
-                .join('\n');
+                const csvContent = [csvHeader, ...csvRows]
+                  .map((row) => row.map((cell) => `"${cell}"`).join(','))
+                  .join('\n');
 
-              const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {t('documents.csvExport')}
-          </Button>
+                const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${typeLabel}_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span className="truncate">{t('documents.csvExport')}</span>
+            </Button>
+          </div>
         </div>
       </div>
 

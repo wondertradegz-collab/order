@@ -249,18 +249,18 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
             {mode === 'create' ? t('expenses.createReport') : t('expenses.editReport')}
           </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1 truncate">
             {t('expenses.subtitle')}
           </p>
         </div>
-        <Button variant="secondary" onClick={() => navigate('/expenses')} className="self-start sm:self-auto min-h-[44px]">
+        <Button variant="secondary" onClick={() => navigate('/expenses')} className="self-start sm:self-auto min-h-[44px] flex-shrink-0">
           {t('common.cancel')}
         </Button>
       </div>
@@ -331,7 +331,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
           <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('expenses.historicalRateFetch')}</p>
             <div className="flex flex-col sm:flex-row sm:items-end gap-2">
-              <div className="w-full sm:flex-1 sm:min-w-[200px]">
+              <div className="w-full sm:flex-1">
                 <DateInput
                   value={rateFetchDate === 'latest' ? getTodayString() : rateFetchDate}
                   onChange={(value) => setRateFetchDate(value || 'latest')}
@@ -342,9 +342,9 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 size="sm"
                 onClick={() => fetchExchangeRate('specific')}
                 disabled={isFetchingRate || rateFetchDate === 'latest'}
-                className="w-full sm:w-auto min-h-[44px]"
+                className="w-full sm:w-auto min-h-[44px] flex-shrink-0"
               >
-                {t('expenses.fetchHistoricalRate')}
+                <span className="truncate">{t('expenses.fetchHistoricalRate')}</span>
               </Button>
             </div>
           </div>

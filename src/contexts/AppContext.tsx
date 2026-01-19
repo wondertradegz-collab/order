@@ -27,6 +27,8 @@ import type {
   ExpenseReport,
   Memo,
   ExpenseSplit,
+  ActivityLog,
+  ActivityType,
 } from '../types';
 
 
@@ -153,6 +155,11 @@ interface AppContextType {
   isCloudEnabled: boolean;
   lastSyncTime: string | null;
   forceSync: () => Promise<void>;
+
+  // アクティビティログ
+  activityLogs: ActivityLog[];
+  addActivityLog: (type: ActivityType, description: string, details?: string) => void;
+  clearActivityLogs: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -168,6 +175,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [expenseReports, setExpenseReports] = useLocalStorage<ExpenseReport[]>('invoice-app-expense-reports', []);
   const [memos, setMemos] = useLocalStorage<Memo[]>('invoice-app-memos', []);
   const [expenseSplits, setExpenseSplits] = useLocalStorage<ExpenseSplit[]>('invoice-app-expense-splits', []);
+  const [activityLogs, setActivityLogs] = useLocalStorage<ActivityLog[]>('invoice-app-activity-logs', []);
 
   // Cloud sync state
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
@@ -339,6 +347,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isCloudEnabled, customers, documents, products, expenseReports, settings, templates, memos, expenseSplits]);
 
+  // アクティビティログ
+  const addActivityLog = useCallback((type: ActivityType, description: string, details?: string) => {
+    const newLog: ActivityLog = {
+      id: uuidv4(),
+      type,
+      description,
+      details,
+      timestamp: new Date().toISOString(),
+    };
+    setActivityLogs((prev) => [newLog, ...prev].slice(0, 100)); // 最新100件を保持
+  }, [setActivityLogs]);
+
+  const clearActivityLogs = useCallback(() => {
+    setActivityLogs([]);
+  }, [setActivityLogs]);
+
   // 顧客操作
   const addCustomer = useCallback((customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer => {
     const now = new Date().toISOString();
@@ -349,20 +373,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updatedAt: now,
     };
     setCustomers((prev) => [...prev, newCustomer]);
+    addActivityLog('customer_create', '顧客を作成', customer.companyName || customer.name);
     return newCustomer;
-  }, [setCustomers]);
+  }, [setCustomers, addActivityLog]);
 
   const updateCustomer = useCallback((id: string, customer: Partial<Customer>) => {
+    const existingCustomer = customers.find((c) => c.id === id);
     setCustomers((prev) =>
       prev.map((c) =>
         c.id === id ? { ...c, ...customer, updatedAt: new Date().toISOString() } : c
       )
     );
-  }, [setCustomers]);
+    addActivityLog('customer_update', '顧客を更新', existingCustomer?.companyName || existingCustomer?.name);
+  }, [setCustomers, customers, addActivityLog]);
 
   const deleteCustomer = useCallback((id: string) => {
+    const existingCustomer = customers.find((c) => c.id === id);
     setCustomers((prev) => prev.filter((c) => c.id !== id));
-  }, [setCustomers]);
+    addActivityLog('customer_delete', '顧客を削除', existingCustomer?.companyName || existingCustomer?.name);
+  }, [setCustomers, customers, addActivityLog]);
 
   const getCustomer = useCallback((id: string) => {
     return customers.find((c) => c.id === id);
@@ -420,10 +449,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } as Document;
 
     setDocuments((prev) => [...prev, newDoc]);
+    const typeLabel = doc.type === 'quotation' ? '見積書' : doc.type === 'invoice' ? '請求書' : '領収書';
+    addActivityLog('document_create', `${typeLabel}を作成`, documentNumber);
     return newDoc;
-  }, [generateDocumentNumber, calculateTotals, setDocuments]);
+  }, [generateDocumentNumber, calculateTotals, setDocuments, addActivityLog]);
 
   const updateDocument = useCallback((id: string, doc: Partial<Document>) => {
+    const existingDoc = documents.find((d) => d.id === id);
     setDocuments((prev) =>
       prev.map((d) => {
         if (d.id !== id) return d;
@@ -439,15 +471,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         } as Document;
       })
     );
-  }, [calculateTotals, setDocuments]);
+    if (existingDoc) {
+      const typeLabel = existingDoc.type === 'quotation' ? '見積書' : existingDoc.type === 'invoice' ? '請求書' : '領収書';
+      addActivityLog('document_update', `${typeLabel}を更新`, existingDoc.documentNumber);
+    }
+  }, [calculateTotals, setDocuments, documents, addActivityLog]);
 
   const deleteDocument = useCallback((id: string) => {
+    const existingDoc = documents.find((d) => d.id === id);
     setDocuments((prev) => prev.filter((d) => d.id !== id));
-  }, [setDocuments]);
+    if (existingDoc) {
+      const typeLabel = existingDoc.type === 'quotation' ? '見積書' : existingDoc.type === 'invoice' ? '請求書' : '領収書';
+      addActivityLog('document_delete', `${typeLabel}を削除`, existingDoc.documentNumber);
+    }
+  }, [setDocuments, documents, addActivityLog]);
 
   const deleteDocuments = useCallback((ids: string[]) => {
+    const deletedCount = ids.length;
     setDocuments((prev) => prev.filter((d) => !ids.includes(d.id)));
-  }, [setDocuments]);
+    addActivityLog('document_delete', `${deletedCount}件の書類を一括削除`);
+  }, [setDocuments, addActivityLog]);
 
   const getDocument = useCallback((id: string) => {
     return documents.find((d) => d.id === id);
@@ -552,6 +595,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // 消し込み処理（入金履歴も記録）
   const recordPayment = useCallback((invoiceId: string, amount: number, paidDate: string, method?: string, note?: string) => {
+    const invoice = documents.find((d) => d.id === invoiceId) as Invoice | undefined;
     // 入金履歴を追加
     const paymentRecord: PaymentRecord = {
       id: uuidv4(),
@@ -569,20 +613,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((d) => {
         if (d.id !== invoiceId || d.type !== 'invoice') return d;
 
-        const invoice = d as Invoice;
-        const newPaidAmount = invoice.paidAmount + amount;
-        const newStatus = newPaidAmount >= invoice.total ? 'paid' : invoice.status;
+        const inv = d as Invoice;
+        const newPaidAmount = inv.paidAmount + amount;
+        const newStatus = newPaidAmount >= inv.total ? 'paid' : inv.status;
 
         return {
-          ...invoice,
+          ...inv,
           paidAmount: newPaidAmount,
-          paidDate: newPaidAmount >= invoice.total ? paidDate : invoice.paidDate,
+          paidDate: newPaidAmount >= inv.total ? paidDate : inv.paidDate,
           status: newStatus,
           updatedAt: new Date().toISOString(),
         };
       })
     );
-  }, [setPaymentRecords, setDocuments]);
+    addActivityLog('payment_record', `入金を記録 (¥${amount.toLocaleString()})`, invoice?.documentNumber);
+  }, [setPaymentRecords, setDocuments, documents, addActivityLog]);
 
   const getPaymentsByInvoice = useCallback((invoiceId: string) => {
     return paymentRecords.filter((p) => p.invoiceId === invoiceId);
@@ -623,7 +668,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...(newSettings.companyInfo || {}),
       },
     }));
-  }, [setSettings]);
+    addActivityLog('settings_update', '設定を更新');
+  }, [setSettings, addActivityLog]);
 
   // 電子印操作
   const addStamp = useCallback((stamp: Omit<ElectronicStamp, 'id' | 'createdAt'>): ElectronicStamp => {
@@ -1042,6 +1088,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     isCloudEnabled,
     lastSyncTime,
     forceSync,
+    // Activity logs
+    activityLogs,
+    addActivityLog,
+    clearActivityLogs,
   }), [
     customers,
     addCustomer,
@@ -1108,6 +1158,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     isCloudEnabled,
     lastSyncTime,
     forceSync,
+    activityLogs,
+    addActivityLog,
+    clearActivityLogs,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

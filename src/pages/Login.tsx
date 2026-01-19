@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useApp } from '../contexts/AppContext';
 import { Button, Input } from '../components/common';
 import type { Language } from '../i18n';
 
 export function Login() {
   const { login, isPasswordSet, setInitialPassword } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { addActivityLog } = useApp();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -49,7 +51,9 @@ export function Login() {
     }
 
     const success = login(password);
-    if (!success) {
+    if (success) {
+      addActivityLog('login', 'ログイン');
+    } else {
       setError(labels.errorIncorrectPassword);
       setPassword('');
     }
@@ -75,6 +79,7 @@ export function Login() {
     }
 
     setInitialPassword(password);
+    addActivityLog('login', '初回ログイン（パスワード設定）');
   };
 
   return (

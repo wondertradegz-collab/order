@@ -369,3 +369,26 @@ export const EXPENSE_SPLIT_STATUS_LABELS: Record<ExpenseSplitStatus, string> = {
   fully_invoiced: '全請求済',
   completed: '完了',
 };
+
+// アクティビティログ
+export type ActivityType =
+  | 'login'
+  | 'logout'
+  | 'document_create'
+  | 'document_update'
+  | 'document_delete'
+  | 'customer_create'
+  | 'customer_update'
+  | 'customer_delete'
+  | 'payment_record'
+  | 'settings_update'
+  | 'backup_create'
+  | 'backup_restore';
+
+export interface ActivityLog {
+  id: string;
+  type: ActivityType;
+  description: string;
+  details?: string; // 追加情報（書類番号、顧客名など）
+  timestamp: string;
+}

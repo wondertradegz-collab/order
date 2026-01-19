@@ -158,6 +158,9 @@ export const translations = {
     tipPdfTitle: { ja: 'PDF出力', zh: 'PDF导出', en: 'PDF Export' },
     tipPdfDesc: { ja: '書類プレビュー画面からPDFを出力して、そのままメールで送付できます', zh: '从文档预览界面导出PDF，可直接通过邮件发送', en: 'Export PDF from document preview and send it via email' },
     total: { ja: '合計', zh: '合计', en: 'Total' },
+    activityLog: { ja: 'アクティビティログ', zh: '活动日志', en: 'Activity Log' },
+    noActivityLogs: { ja: 'アクティビティがありません', zh: '暂无活动', en: 'No activity yet' },
+    noActivityLogsDescription: { ja: 'ログイン、書類作成などの操作履歴がここに表示されます', zh: '登录、创建文档等操作记录将显示在这里', en: 'Login, document creation and other activities will appear here' },
   },
 
   // Documents

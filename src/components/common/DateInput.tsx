@@ -124,25 +124,6 @@ export function DateInput({
     setError(null);
   };
 
-  const openCalendar = () => {
-    const input = hiddenDateInputRef.current;
-    if (!input) return;
-
-    // showPicker() APIを試す（対応ブラウザ）
-    try {
-      if (typeof input.showPicker === 'function') {
-        input.showPicker();
-        return;
-      }
-    } catch {
-      // showPicker()が失敗した場合はfocusにフォールバック
-    }
-
-    // フォールバック：focusでカレンダーを開く
-    input.focus();
-    input.click();
-  };
-
   return (
     <div className={className}>
       {label && (
@@ -167,32 +148,29 @@ export function DateInput({
             } focus:outline-none focus:ring-2`}
           />
 
-          {/* カレンダーボタン */}
+          {/* カレンダーボタン（実際のdate inputを重ねて配置） */}
           {!hideCalendarButton && (
-            <button
-              type="button"
-              onClick={openCalendar}
-              className="flex-shrink-0 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors"
-              title="カレンダーから選択"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
+            <div className="relative flex-shrink-0">
+              <div
+                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              {/* ネイティブdate input（ボタンの上に透明で配置） */}
+              <input
+                ref={hiddenDateInputRef}
+                type="date"
+                value={value}
+                onChange={handleCalendarChange}
+                min={min}
+                max={max}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ fontSize: '16px' }} /* iOS Safari でのズーム防止 */
+              />
+            </div>
           )}
-
-          {/* 隠しdate input（カレンダーボタン用） */}
-          <input
-            ref={hiddenDateInputRef}
-            type="date"
-            value={value}
-            onChange={handleCalendarChange}
-            min={min}
-            max={max}
-            className="absolute opacity-0 w-0 h-0 pointer-events-none"
-            tabIndex={-1}
-            aria-hidden="true"
-          />
         </div>
       </div>
 

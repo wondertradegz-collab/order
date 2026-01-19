@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/common';
 import { formatCurrency, formatDate, getStatusLabel, getStatusColor, getDocumentTypeLabel } from '../utils/format';
 import type { Invoice } from '../types';
@@ -8,6 +9,7 @@ import type { Invoice } from '../types';
 export function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { getCustomer, getDocumentsByCustomer } = useApp();
 
   const customer = id ? getCustomer(id) : undefined;
@@ -45,9 +47,9 @@ export function CustomerDetail() {
   if (!customer) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">顧客が見つかりません</p>
+        <p className="text-gray-500">{t('common.noData')}</p>
         <Button onClick={() => navigate('/customers')} className="mt-4">
-          顧客一覧へ戻る
+          {t('common.back')}
         </Button>
       </div>
     );
@@ -59,7 +61,7 @@ export function CustomerDetail() {
       <div className="flex items-center justify-between">
         <div>
           <Link to="/customers" className="text-sm text-blue-600 hover:text-blue-700 mb-2 inline-block">
-            ← 顧客一覧に戻る
+            ← {t('common.back')}
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
           {customer.companyName && (
@@ -68,33 +70,33 @@ export function CustomerDetail() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate(`/quotations/new?customerId=${customer.id}`)}>
-            見積書作成
+            {t('dashboard.createQuotation')}
           </Button>
           <Button onClick={() => navigate(`/invoices/new?customerId=${customer.id}`)}>
-            請求書作成
+            {t('dashboard.createInvoice')}
           </Button>
         </div>
       </div>
 
       {/* Customer Info Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">顧客情報</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documents.customer')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {customer.email && (
             <div>
-              <p className="text-sm text-gray-500">メールアドレス</p>
+              <p className="text-sm text-gray-500">{t('settings.email')}</p>
               <p className="text-gray-900">{customer.email}</p>
             </div>
           )}
           {customer.phone && (
             <div>
-              <p className="text-sm text-gray-500">電話番号</p>
+              <p className="text-sm text-gray-500">{t('settings.phone')}</p>
               <p className="text-gray-900">{customer.phone}</p>
             </div>
           )}
           {customer.address && (
             <div className="md:col-span-2">
-              <p className="text-sm text-gray-500">住所</p>
+              <p className="text-sm text-gray-500">{t('settings.address')}</p>
               <p className="text-gray-900">
                 {customer.postalCode && `〒${customer.postalCode} `}
                 {customer.address}
@@ -102,7 +104,7 @@ export function CustomerDetail() {
             </div>
           )}
           <div>
-            <p className="text-sm text-gray-500">登録日</p>
+            <p className="text-sm text-gray-500">{t('common.date')}</p>
             <p className="text-gray-900">{formatDate(customer.createdAt)}</p>
           </div>
         </div>
@@ -111,50 +113,50 @@ export function CustomerDetail() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">売上合計</p>
+          <p className="text-sm text-gray-500">{t('customers.totalSales')}</p>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalSales)}</p>
-          <p className="text-xs text-gray-400">{stats.receiptCount}件の領収書</p>
+          <p className="text-xs text-gray-400">{stats.receiptCount}{t('common.items')} {t('documents.receipt')}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">請求額合計</p>
+          <p className="text-sm text-gray-500">{t('reports.invoiced')}</p>
           <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalInvoiced)}</p>
-          <p className="text-xs text-gray-400">{stats.invoiceCount}件の請求書</p>
+          <p className="text-xs text-gray-400">{stats.invoiceCount}{t('common.items')} {t('documents.invoice')}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">入金済み</p>
+          <p className="text-sm text-gray-500">{t('documents.paidAmount')}</p>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalPaid)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <p className="text-sm text-gray-500">未入金</p>
+          <p className="text-sm text-gray-500">{t('dashboard.unpaid')}</p>
           <p className="text-2xl font-bold text-orange-600">{formatCurrency(stats.totalUnpaid)}</p>
         </div>
       </div>
 
       {/* Transaction History */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">取引履歴</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documents.paymentHistory')}</h2>
 
         {customerDocuments.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">取引履歴がありません</p>
+          <p className="text-gray-500 text-center py-8">{t('common.noData')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    種別
+                    {t('dashboard.documentType')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    番号
+                    {t('documents.number')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    発行日
+                    {t('documents.issueDate')}
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    金額
+                    {t('common.amount')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                    {t('common.status')}
                   </th>
                 </tr>
               </thead>

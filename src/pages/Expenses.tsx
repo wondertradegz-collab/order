@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Card, Badge, Button, EmptyState, Select } from '../components/common';
 import type { ExpenseReportStatus } from '../types';
@@ -9,6 +10,7 @@ import { EXPENSE_REPORT_STATUS_LABELS } from '../types';
 export function Expenses() {
   const navigate = useNavigate();
   const { expenseReports, customers } = useApp();
+  const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<ExpenseReportStatus | 'all'>('all');
   const [customerFilter, setCustomerFilter] = useState<string>('all');
 
@@ -34,9 +36,9 @@ export function Expenses() {
   }, [expenseReports, statusFilter, customerFilter]);
 
   const getCustomerName = (customerId?: string) => {
-    if (!customerId) return '未設定';
+    if (!customerId) return t('common.unknown');
     const customer = customers.find((c) => c.id === customerId);
-    return customer?.companyName || customer?.name || '不明';
+    return customer?.companyName || customer?.name || t('common.unknown');
   };
 
   const getStatusColor = (status: ExpenseReportStatus): 'gray' | 'blue' | 'green' => {
@@ -77,46 +79,46 @@ export function Expenses() {
   }, [expenseReports, customerFilter]);
 
   const customerOptions = useMemo(() => [
-    { value: 'all', label: 'すべての顧客' },
-    { value: 'none', label: '顧客未設定' },
+    { value: 'all', label: t('common.all') },
+    { value: 'none', label: t('common.unknown') },
     ...customersWithExpenses.map((c) => ({
       value: c.id,
       label: c.companyName || c.name,
     })),
-  ], [customersWithExpenses]);
+  ], [customersWithExpenses, t]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">経費精算</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">WeChat Pay等での経費をまとめて請求書に反映</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('expenses.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('expenses.subtitle')}</p>
         </div>
         <Button onClick={() => navigate('/expenses/new')}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          新規作成
+          {t('expenses.createReport')}
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">作成中</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStats.draft}件</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('status.draft')}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStats.draft}{t('common.items')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">確定済み</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalStats.completed}件</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('status.completed')}</p>
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalStats.completed}{t('common.items')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">未請求合計(RMB)</p>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalStats.totalRMB.toLocaleString()}元</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalRMB')}</p>
+          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{totalStats.totalRMB.toLocaleString()}{t('common.yuan')}</p>
         </Card>
         <Card>
-          <p className="text-sm text-gray-500 dark:text-gray-400">未請求合計(JPY)</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalJPY')}</p>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalStats.totalJPY)}</p>
         </Card>
       </div>
@@ -126,7 +128,7 @@ export function Expenses() {
         {/* Customer Filter */}
         <div className="w-full sm:w-64">
           <Select
-            label="顧客で絞り込み"
+            label={t('documents.customer')}
             value={customerFilter}
             onChange={(value) => setCustomerFilter(value)}
             options={customerOptions}
@@ -135,7 +137,7 @@ export function Expenses() {
 
         {/* Status Filter */}
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ステータス</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.status')}</p>
           <div className="flex gap-2 flex-wrap">
             {(['all', 'draft', 'completed', 'invoiced'] as const).map((status) => (
               <button
@@ -147,7 +149,7 @@ export function Expenses() {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                {status === 'all' ? 'すべて' : EXPENSE_REPORT_STATUS_LABELS[status]}
+                {status === 'all' ? t('common.all') : EXPENSE_REPORT_STATUS_LABELS[status]}
               </button>
             ))}
           </div>
@@ -163,11 +165,11 @@ export function Expenses() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
               </svg>
             }
-            title="経費レポートがありません"
-            description="新規作成ボタンから経費レポートを作成してください"
+            title={t('expenses.noExpenses')}
+            description={t('expenses.addFirstExpense')}
             action={
               <Button onClick={() => navigate('/expenses/new')}>
-                新規作成
+                {t('expenses.createReport')}
               </Button>
             }
           />
@@ -187,22 +189,22 @@ export function Expenses() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{report.expenses.length}件の経費</span>
+                    <span>{report.expenses.length}{t('common.items')}</span>
                     <span>|</span>
-                    <span>請求先: {getCustomerName(report.customerId)}</span>
+                    <span>{t('documents.customer')}: {getCustomerName(report.customerId)}</span>
                     <span>|</span>
                     <span>{formatDate(report.createdAt)}</span>
                   </div>
                 </div>
                 <div className="text-right ml-4">
                   <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                    {report.totalRMB.toLocaleString()}元
+                    {report.totalRMB.toLocaleString()}{t('common.yuan')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    ≈ {formatCurrency(report.totalJPY)}
+                    {formatCurrency(report.totalJPY)}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    @{report.exchangeRate}円/元
+                    @{report.exchangeRate}{t('expenses.yenPerYuan')}
                   </p>
                 </div>
               </div>

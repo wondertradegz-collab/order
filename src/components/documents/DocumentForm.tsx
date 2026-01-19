@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Textarea, Select, Button, DateInput } from '../common';
 import { LineItemEditor, TotalsSummary } from './LineItemEditor';
 import { getTodayString } from '../../utils/format';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { Document, LineItem, Customer, DocumentType, Product } from '../../types';
 
 interface DocumentFormProps {
@@ -24,8 +25,10 @@ export function DocumentForm({
   initialData,
   onSubmit,
   onCancel,
-  submitLabel = '保存',
+  submitLabel,
 }: DocumentFormProps) {
+  const { t } = useLanguage();
+  const actualSubmitLabel = submitLabel || t('common.save');
   const [customerId, setCustomerId] = useState(initialData?.customerId || '');
   const [issueDate, setIssueDate] = useState(initialData?.issueDate || getTodayString());
   const [dueDate, setDueDate] = useState(
@@ -38,7 +41,7 @@ export function DocumentForm({
     (initialData as any)?.paymentMethod || ''
   );
   const [proviso, setProviso] = useState(
-    (initialData as any)?.proviso || 'お品代として'
+    (initialData as any)?.proviso || t('documentForm.provisoAsGoods')
   );
   const [items, setItems] = useState<LineItem[]>(
     initialData?.items || [
@@ -107,69 +110,69 @@ export function DocumentForm({
   }));
 
   const statusOptions = [
-    { value: 'draft', label: '下書き' },
-    { value: 'sent', label: '送付済み' },
+    { value: 'draft', label: t('status.draft') },
+    { value: 'sent', label: t('status.sent') },
     ...(type === 'invoice'
       ? [
-          { value: 'paid', label: '入金済み' },
-          { value: 'overdue', label: '期限超過' },
+          { value: 'paid', label: t('status.paid') },
+          { value: 'overdue', label: t('status.overdue') },
         ]
       : []),
-    ...(type === 'receipt' ? [{ value: 'paid', label: '発行済み' }] : []),
-    { value: 'cancelled', label: 'キャンセル' },
+    ...(type === 'receipt' ? [{ value: 'paid', label: t('documentForm.receiptIssued') }] : []),
+    { value: 'cancelled', label: t('status.cancelled') },
   ];
 
   const paymentMethodOptions = [
-    { value: '', label: '選択してください' },
-    { value: '銀行振込', label: '銀行振込' },
-    { value: '現金', label: '現金' },
-    { value: 'クレジットカード', label: 'クレジットカード' },
-    { value: '口座振替', label: '口座振替' },
-    { value: 'その他', label: 'その他' },
+    { value: '', label: t('documentForm.pleaseSelect') },
+    { value: 'bankTransfer', label: t('paymentMethods.bankTransfer') },
+    { value: 'cash', label: t('paymentMethods.cash') },
+    { value: 'creditCard', label: t('paymentMethods.creditCard') },
+    { value: 'directDebit', label: t('paymentMethods.directDebit') },
+    { value: 'other', label: t('paymentMethods.other') },
   ];
 
   const provisoOptions = [
-    { value: 'お品代として', label: 'お品代として' },
-    { value: '商品代金として', label: '商品代金として' },
-    { value: 'サービス料として', label: 'サービス料として' },
-    { value: 'コンサルティング費用として', label: 'コンサルティング費用として' },
-    { value: '業務委託費として', label: '業務委託費として' },
+    { value: t('documentForm.provisoAsGoods'), label: t('documentForm.provisoAsGoods') },
+    { value: t('documentForm.provisoAsProducts'), label: t('documentForm.provisoAsProducts') },
+    { value: t('documentForm.provisoAsService'), label: t('documentForm.provisoAsService') },
+    { value: t('documentForm.provisoAsConsulting'), label: t('documentForm.provisoAsConsulting') },
+    { value: t('documentForm.provisoAsOutsourcing'), label: t('documentForm.provisoAsOutsourcing') },
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">基本情報</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documentForm.basicInfo')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
-            label="顧客 *"
+            label={`${t('documents.customer')} *`}
             options={customerOptions}
             value={customerId}
             onChange={setCustomerId}
-            placeholder="顧客を選択"
+            placeholder={t('documentForm.selectCustomer')}
           />
           <Select
-            label="ステータス"
+            label={t('common.status')}
             options={statusOptions}
             value={status}
             onChange={(val) => setStatus(val as any)}
           />
           <DateInput
-            label="発行日"
+            label={t('documents.issueDate')}
             value={issueDate}
             onChange={(value) => setIssueDate(value)}
           />
           {type === 'quotation' && (
             <DateInput
-              label="有効期限"
+              label={t('documents.validUntil')}
               value={validUntil}
               onChange={(value) => setValidUntil(value)}
             />
           )}
           {type === 'invoice' && (
             <DateInput
-              label="支払期限"
+              label={t('documents.dueDate')}
               value={dueDate}
               onChange={(value) => setDueDate(value)}
             />
@@ -177,20 +180,20 @@ export function DocumentForm({
           {type === 'receipt' && (
             <>
               <Select
-                label="支払方法"
+                label={t('documents.paymentMethod')}
                 options={paymentMethodOptions}
                 value={paymentMethod}
                 onChange={setPaymentMethod}
               />
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">但し書き</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documentForm.proviso')}</label>
                 <div className="flex gap-2">
                   <select
                     value={provisoOptions.some(o => o.value === proviso) ? proviso : ''}
                     onChange={(e) => e.target.value && setProviso(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">選択またはカスタム入力</option>
+                    <option value="">{t('documentForm.selectOrCustom')}</option>
                     {provisoOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
@@ -200,7 +203,7 @@ export function DocumentForm({
                     value={proviso}
                     onChange={(e) => setProviso(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="カスタム但し書き"
+                    placeholder={t('documentForm.customProviso')}
                   />
                 </div>
               </div>
@@ -211,7 +214,7 @@ export function DocumentForm({
 
       {/* Line Items */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">明細</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documents.lineItems')}</h2>
         <LineItemEditor
           items={items}
           onChange={setItems}
@@ -225,11 +228,11 @@ export function DocumentForm({
 
       {/* Notes */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">備考</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('common.notes')}</h2>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="備考・特記事項があれば入力してください"
+          placeholder={t('documentForm.notesPlaceholder')}
           rows={4}
         />
       </div>
@@ -237,10 +240,10 @@ export function DocumentForm({
       {/* Actions */}
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
         <Button type="button" variant="secondary" onClick={onCancel}>
-          キャンセル
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={!customerId || items.length === 0}>
-          {submitLabel}
+          {actualSubmitLabel}
         </Button>
       </div>
     </form>

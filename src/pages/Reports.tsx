@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Button, Select, Input, DateInput } from '../components/common';
 import type { Invoice, Receipt, LineItem } from '../types';
@@ -45,6 +46,7 @@ type TabType = 'overview' | 'aging' | 'cashflow' | 'products' | 'goals';
 export function Reports() {
   const { documents, customers } = useApp();
   const { monthlyGoal, setMonthlyGoal } = useTheme();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [period, setPeriod] = useState<'thisMonth' | 'lastMonth' | 'thisYear' | 'custom'>('thisMonth');
   const [customStart, setCustomStart] = useState('');
@@ -219,11 +221,12 @@ export function Reports() {
   const cashFlowForecast = useMemo(() => {
     const today = new Date();
     const forecast: { month: string; expected: number; received: number }[] = [];
+    const locale = language === 'ja' ? 'ja-JP' : language === 'zh' ? 'zh-CN' : 'en-US';
 
     for (let i = 0; i < 3; i++) {
       const monthStart = new Date(today.getFullYear(), today.getMonth() + i, 1);
       const monthEnd = new Date(today.getFullYear(), today.getMonth() + i + 1, 0);
-      const monthName = monthStart.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
+      const monthName = monthStart.toLocaleDateString(locale, { year: 'numeric', month: 'long' });
 
       // Expected: unpaid invoices due in this month
       const expectedInvoices = (documents.filter(
@@ -250,12 +253,13 @@ export function Reports() {
     }
 
     return forecast;
-  }, [documents]);
+  }, [documents, language]);
 
   // Product/item sales analysis
   const productSales = useMemo(() => {
     const { start, end } = dateRange;
     const salesMap: Record<string, { name: string; quantity: number; revenue: number; category: string }> = {};
+    const otherLabel = language === 'ja' ? 'その他' : language === 'zh' ? '其他' : 'Other';
 
     // Analyze items from receipts (confirmed sales)
     const receipts = documents.filter((d) => {
@@ -267,9 +271,9 @@ export function Reports() {
     receipts.forEach((receipt) => {
       receipt.items.forEach((item) => {
         const category = item.category || 'revenue';
-        const key = `${item.description || 'その他'}__${category}`;
+        const key = `${item.description || otherLabel}__${category}`;
         if (!salesMap[key]) {
-          salesMap[key] = { name: item.description || 'その他', quantity: 0, revenue: 0, category };
+          salesMap[key] = { name: item.description || otherLabel, quantity: 0, revenue: 0, category };
         }
         salesMap[key].quantity += item.quantity;
         salesMap[key].revenue += item.quantity * item.unitPrice;
@@ -279,7 +283,7 @@ export function Reports() {
     return Object.values(salesMap)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 15);
-  }, [documents, dateRange]);
+  }, [documents, dateRange, language]);
 
   // Goal progress - 純売上のみを使用（立替経費回収は含まない）
   const goalProgress = useMemo(() => {
@@ -332,8 +336,8 @@ export function Reports() {
 
   const getCustomerName = useCallback((customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
-    return customer?.companyName || customer?.name || '不明';
-  }, [customers]);
+    return customer?.companyName || customer?.name || t('common.unknown');
+  }, [customers, t]);
 
   const topCustomers = useMemo(() => {
     return Object.entries(stats.salesByCustomer)
@@ -346,16 +350,20 @@ export function Reports() {
       .slice(0, 10);
   }, [stats.salesByCustomer, getCustomerName]);
 
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const months = language === 'ja'
+    ? ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+    : language === 'zh'
+    ? ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+    : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const maxMonthlySales = Math.max(...stats.monthlySales.map((m) => m.total), 1);
   const totalAging = agingData.current.amount + agingData.days30.amount + agingData.days60.amount + agingData.days90.amount + agingData.over90.amount;
 
   const tabs = [
-    { id: 'overview', label: '概要' },
-    { id: 'aging', label: '売掛金分析' },
-    { id: 'cashflow', label: 'キャッシュフロー' },
-    { id: 'products', label: '商品別分析' },
-    { id: 'goals', label: '目標管理' },
+    { id: 'overview', label: t('reports.overview') },
+    { id: 'aging', label: t('reports.aging') },
+    { id: 'cashflow', label: t('reports.cashflow') },
+    { id: 'products', label: t('reports.productAnalysis') },
+    { id: 'goals', label: t('reports.goals') },
   ];
 
   return (
@@ -363,8 +371,8 @@ export function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">売上レポート</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">売上状況と各種分析</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('reports.overview')}</p>
         </div>
       </div>
 
@@ -395,12 +403,12 @@ export function Reports() {
             <div className="flex flex-wrap gap-4 items-end">
               <div className="w-40">
                 <Select
-                  label="期間"
+                  label={t('reports.period')}
                   options={[
-                    { value: 'thisMonth', label: '今月' },
-                    { value: 'lastMonth', label: '先月' },
-                    { value: 'thisYear', label: '今年' },
-                    { value: 'custom', label: 'カスタム' },
+                    { value: 'thisMonth', label: t('reports.thisMonth') },
+                    { value: 'lastMonth', label: t('reports.lastMonth') },
+                    { value: 'thisYear', label: t('reports.thisYear') },
+                    { value: 'custom', label: t('reports.custom') },
                   ]}
                   value={period}
                   onChange={(val) => setPeriod(val as typeof period)}
@@ -410,14 +418,14 @@ export function Reports() {
                 <>
                   <div className="min-w-[200px]">
                     <DateInput
-                      label="開始日"
+                      label={t('reports.startDate')}
                       value={customStart}
                       onChange={(value) => setCustomStart(value)}
                     />
                   </div>
                   <div className="min-w-[200px]">
                     <DateInput
-                      label="終了日"
+                      label={t('reports.endDate')}
                       value={customEnd}
                       onChange={(value) => setCustomEnd(value)}
                     />
@@ -433,21 +441,21 @@ export function Reports() {
           {/* Summary Cards - Main */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">純売上（領収書）</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.pureRevenue')} ({t('documents.receipt')})</p>
               <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(stats.receiptTotals.revenue - stats.receiptTotals.discount)}</p>
-              <p className="text-xs text-gray-400 mt-1">{stats.receiptCount}件</p>
+              <p className="text-xs text-gray-400 mt-1">{stats.receiptCount}{t('common.items')}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">純請求額</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.invoiced')}</p>
               <p className="text-2xl font-bold text-blue-600 mt-1">{formatCurrency(stats.invoiceTotals.revenue - stats.invoiceTotals.discount)}</p>
-              <p className="text-xs text-gray-400 mt-1">{stats.invoiceCount}件</p>
+              <p className="text-xs text-gray-400 mt-1">{stats.invoiceCount}{t('common.items')}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">入金済み</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.collected')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(stats.totalPaid)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">未入金</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.outstanding')}</p>
               <p className="text-2xl font-bold text-orange-600 mt-1">{formatCurrency(stats.totalUnpaid)}</p>
             </div>
           </div>
@@ -455,29 +463,29 @@ export function Reports() {
           {/* Category Breakdown Cards */}
           {(stats.receiptTotals.expenseReimbursement > 0 || stats.invoiceTotals.expenseReimbursement > 0) && (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">カテゴリ別内訳</h3>
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('reports.categoryBreakdown')}</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-xs text-green-700 dark:text-green-400">売上（税込）</p>
+                  <p className="text-xs text-green-700 dark:text-green-400">{t('reports.revenue')} ({t('common.tax')})</p>
                   <p className="text-lg font-bold text-green-600">{formatCurrency(stats.receiptTotals.revenue)}</p>
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                  <p className="text-xs text-amber-700 dark:text-amber-400">立替経費回収</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">{t('reports.expenseReimbursement')}</p>
                   <p className="text-lg font-bold text-amber-600">{formatCurrency(stats.receiptTotals.expenseReimbursement)}</p>
                 </div>
                 {stats.receiptTotals.discount > 0 && (
                   <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <p className="text-xs text-red-700 dark:text-red-400">値引き</p>
+                    <p className="text-xs text-red-700 dark:text-red-400">{t('reports.discount')}</p>
                     <p className="text-lg font-bold text-red-600">-{formatCurrency(stats.receiptTotals.discount)}</p>
                   </div>
                 )}
                 <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                  <p className="text-xs text-gray-700 dark:text-gray-300">領収書合計</p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300">{t('reports.receiptTotal')}</p>
                   <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalSales)}</p>
                 </div>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                立替経費は回収額であり、純売上には含まれません
+                {t('reports.pureRevenueNote')}
               </p>
             </div>
           )}
@@ -486,15 +494,15 @@ export function Reports() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Monthly Sales Chart */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">月別売上（今年）</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.monthlySalesTrend')}</h2>
               <div className="flex gap-4 mb-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-gray-600 dark:text-gray-400">売上</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('reports.revenue')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-amber-500 rounded"></div>
-                  <span className="text-gray-600 dark:text-gray-400">立替経費</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('reports.expenseReimbursement')}</span>
                 </div>
               </div>
               <div className="space-y-3">
@@ -506,14 +514,14 @@ export function Reports() {
                       <div
                         className="h-full bg-green-500 transition-all duration-300"
                         style={{ width: `${(monthData.revenue / maxMonthlySales) * 100}%` }}
-                        title={`売上: ${formatCurrency(monthData.revenue)}`}
+                        title={`${t('reports.revenue')}: ${formatCurrency(monthData.revenue)}`}
                       />
                       {/* Expense reimbursement bar (amber) */}
                       {monthData.expenseReimbursement > 0 && (
                         <div
                           className="h-full bg-amber-500 transition-all duration-300"
                           style={{ width: `${(monthData.expenseReimbursement / maxMonthlySales) * 100}%` }}
-                          title={`立替経費: ${formatCurrency(monthData.expenseReimbursement)}`}
+                          title={`${t('reports.expenseReimbursement')}: ${formatCurrency(monthData.expenseReimbursement)}`}
                         />
                       )}
                     </div>
@@ -527,9 +535,9 @@ export function Reports() {
 
             {/* Top Customers */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">顧客別売上</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('documents.customer')} {t('reports.revenue')}</h2>
               {topCustomers.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">データがありません</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t('common.noData')}</p>
               ) : (
                 <div className="space-y-3">
                   {topCustomers.map((customer, index) => (
@@ -554,28 +562,28 @@ export function Reports() {
               variant="secondary"
               onClick={() => {
                 const csvData = [
-                  ['期間', `${formatDate(dateRange.start)} - ${formatDate(dateRange.end)}`],
+                  [t('reports.period'), `${formatDate(dateRange.start)} - ${formatDate(dateRange.end)}`],
                   [],
-                  ['■ カテゴリ別売上（領収書）'],
-                  ['売上（税込）', stats.receiptTotals.revenue],
-                  ['立替経費回収', stats.receiptTotals.expenseReimbursement],
-                  ['値引き', stats.receiptTotals.discount],
-                  ['純売上', stats.receiptTotals.revenue - stats.receiptTotals.discount],
-                  ['領収書合計', stats.totalSales],
+                  [`■ ${t('reports.categoryBreakdown')} (${t('documents.receipt')})`],
+                  [`${t('reports.revenue')} (${t('common.tax')})`, stats.receiptTotals.revenue],
+                  [t('reports.expenseReimbursement'), stats.receiptTotals.expenseReimbursement],
+                  [t('reports.discount'), stats.receiptTotals.discount],
+                  [t('reports.pureRevenue'), stats.receiptTotals.revenue - stats.receiptTotals.discount],
+                  [t('reports.receiptTotal'), stats.totalSales],
                   [],
-                  ['■ カテゴリ別請求（請求書）'],
-                  ['売上（税込）', stats.invoiceTotals.revenue],
-                  ['立替経費', stats.invoiceTotals.expenseReimbursement],
-                  ['値引き', stats.invoiceTotals.discount],
-                  ['純請求額', stats.invoiceTotals.revenue - stats.invoiceTotals.discount],
-                  ['請求書合計', stats.totalInvoiced],
+                  [`■ ${t('reports.categoryBreakdown')} (${t('documents.invoice')})`],
+                  [`${t('reports.revenue')} (${t('common.tax')})`, stats.invoiceTotals.revenue],
+                  [t('reports.expenseReimbursement'), stats.invoiceTotals.expenseReimbursement],
+                  [t('reports.discount'), stats.invoiceTotals.discount],
+                  [t('reports.invoiced'), stats.invoiceTotals.revenue - stats.invoiceTotals.discount],
+                  [`${t('documents.invoice')} ${t('common.total')}`, stats.totalInvoiced],
                   [],
-                  ['■ 入金状況'],
-                  ['入金済み', stats.totalPaid],
-                  ['未入金', stats.totalUnpaid],
+                  [`■ ${t('reports.collected')}`],
+                  [t('reports.collected'), stats.totalPaid],
+                  [t('reports.outstanding'), stats.totalUnpaid],
                   [],
-                  ['■ 顧客別売上（純売上）'],
-                  ['顧客名', '売上'],
+                  [`■ ${t('documents.customer')} ${t('reports.pureRevenue')}`],
+                  [t('customers.customerName'), t('reports.revenue')],
                   ...topCustomers.map((c) => [c.name, c.amount]),
                 ];
                 const csv = csvData.map((row) => row.join(',')).join('\n');
@@ -583,12 +591,12 @@ export function Reports() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `売上レポート_${formatDate(dateRange.start)}_${formatDate(dateRange.end)}.csv`;
+                a.download = `${t('reports.title')}_${formatDate(dateRange.start)}_${formatDate(dateRange.end)}.csv`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}
             >
-              CSVでエクスポート
+              {t('common.export')} CSV
             </Button>
           </div>
         </>
@@ -598,68 +606,68 @@ export function Reports() {
       {activeTab === 'aging' && (
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">売掛金エージング分析</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">未入金請求書を経過日数別に分類し、回収リスクを可視化します</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.aging')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{language === 'ja' ? '未入金請求書を経過日数別に分類し、回収リスクを可視化します' : language === 'zh' ? '按逾期天数对未付发票进行分类，可视化回收风险' : 'Classify unpaid invoices by days overdue to visualize collection risk'}</p>
 
             {/* Aging Summary */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm text-green-700 dark:text-green-400">期限内</p>
+                <p className="text-sm text-green-700 dark:text-green-400">{language === 'ja' ? '期限内' : language === 'zh' ? '未逾期' : 'Current'}</p>
                 <p className="text-xl font-bold text-green-600">{formatCurrency(agingData.current.amount)}</p>
-                <p className="text-xs text-green-600">{agingData.current.count}件</p>
+                <p className="text-xs text-green-600">{agingData.current.count}{t('common.items')}</p>
               </div>
               <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <p className="text-sm text-yellow-700 dark:text-yellow-400">1-30日</p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-400">1-30{language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}</p>
                 <p className="text-xl font-bold text-yellow-600">{formatCurrency(agingData.days30.amount)}</p>
-                <p className="text-xs text-yellow-600">{agingData.days30.count}件</p>
+                <p className="text-xs text-yellow-600">{agingData.days30.count}{t('common.items')}</p>
               </div>
               <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                <p className="text-sm text-orange-700 dark:text-orange-400">31-60日</p>
+                <p className="text-sm text-orange-700 dark:text-orange-400">31-60{language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}</p>
                 <p className="text-xl font-bold text-orange-600">{formatCurrency(agingData.days60.amount)}</p>
-                <p className="text-xs text-orange-600">{agingData.days60.count}件</p>
+                <p className="text-xs text-orange-600">{agingData.days60.count}{t('common.items')}</p>
               </div>
               <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <p className="text-sm text-red-700 dark:text-red-400">61-90日</p>
+                <p className="text-sm text-red-700 dark:text-red-400">61-90{language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}</p>
                 <p className="text-xl font-bold text-red-600">{formatCurrency(agingData.days90.amount)}</p>
-                <p className="text-xs text-red-600">{agingData.days90.count}件</p>
+                <p className="text-xs text-red-600">{agingData.days90.count}{t('common.items')}</p>
               </div>
               <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                <p className="text-sm text-gray-700 dark:text-gray-300">90日超</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">90{language === 'ja' ? '日超' : language === 'zh' ? '天以上' : '+ days'}</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-white">{formatCurrency(agingData.over90.amount)}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">{agingData.over90.count}件</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{agingData.over90.count}{t('common.items')}</p>
               </div>
             </div>
 
             {/* Aging Bar Chart */}
             <div className="mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">構成比</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{language === 'ja' ? '構成比' : language === 'zh' ? '占比' : 'Composition'}</p>
               <div className="h-8 flex rounded-lg overflow-hidden">
                 {totalAging > 0 ? (
                   <>
                     <div
                       className="bg-green-500 transition-all"
                       style={{ width: `${(agingData.current.amount / totalAging) * 100}%` }}
-                      title={`期限内: ${formatCurrency(agingData.current.amount)}`}
+                      title={`${language === 'ja' ? '期限内' : language === 'zh' ? '未逾期' : 'Current'}: ${formatCurrency(agingData.current.amount)}`}
                     />
                     <div
                       className="bg-yellow-500 transition-all"
                       style={{ width: `${(agingData.days30.amount / totalAging) * 100}%` }}
-                      title={`1-30日: ${formatCurrency(agingData.days30.amount)}`}
+                      title={`1-30${language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}: ${formatCurrency(agingData.days30.amount)}`}
                     />
                     <div
                       className="bg-orange-500 transition-all"
                       style={{ width: `${(agingData.days60.amount / totalAging) * 100}%` }}
-                      title={`31-60日: ${formatCurrency(agingData.days60.amount)}`}
+                      title={`31-60${language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}: ${formatCurrency(agingData.days60.amount)}`}
                     />
                     <div
                       className="bg-red-500 transition-all"
                       style={{ width: `${(agingData.days90.amount / totalAging) * 100}%` }}
-                      title={`61-90日: ${formatCurrency(agingData.days90.amount)}`}
+                      title={`61-90${language === 'ja' ? '日' : language === 'zh' ? '天' : ' days'}: ${formatCurrency(agingData.days90.amount)}`}
                     />
                     <div
                       className="bg-gray-500 transition-all"
                       style={{ width: `${(agingData.over90.amount / totalAging) * 100}%` }}
-                      title={`90日超: ${formatCurrency(agingData.over90.amount)}`}
+                      title={`90${language === 'ja' ? '日超' : language === 'zh' ? '天以上' : '+ days'}: ${formatCurrency(agingData.over90.amount)}`}
                     />
                   </>
                 ) : (
@@ -670,7 +678,7 @@ export function Reports() {
 
             {/* Total */}
             <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <span className="font-medium text-gray-700 dark:text-gray-300">未回収合計</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{t('reports.outstanding')} {t('common.total')}</span>
               <span className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalAging)}</span>
             </div>
           </div>
@@ -681,8 +689,8 @@ export function Reports() {
       {activeTab === 'cashflow' && (
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">キャッシュフロー予測</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">支払期限に基づく今後3ヶ月の入金予測</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.cashflow')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{language === 'ja' ? '支払期限に基づく今後3ヶ月の入金予測' : language === 'zh' ? '基于付款期限的未来3个月收款预测' : 'Payment forecast for the next 3 months based on due dates'}</p>
 
             <div className="space-y-4">
               {cashFlowForecast.map((item, index) => (
@@ -690,12 +698,12 @@ export function Reports() {
                   <h3 className="font-medium text-gray-900 dark:text-white mb-3">{item.month}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">入金予定</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ja' ? '入金予定' : language === 'zh' ? '预计收款' : 'Expected'}</p>
                       <p className="text-xl font-bold text-blue-600">{formatCurrency(item.expected)}</p>
                     </div>
                     {index === 0 && (
                       <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">入金済み</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('reports.collected')}</p>
                         <p className="text-xl font-bold text-green-600">{formatCurrency(item.received)}</p>
                       </div>
                     )}
@@ -706,7 +714,7 @@ export function Reports() {
 
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-blue-700 dark:text-blue-400">
-                今後3ヶ月の入金予定合計: <span className="font-bold">{formatCurrency(cashFlowForecast.reduce((sum, f) => sum + f.expected, 0))}</span>
+                {language === 'ja' ? '今後3ヶ月の入金予定合計' : language === 'zh' ? '未来3个月预计收款总额' : 'Total expected payments for the next 3 months'}: <span className="font-bold">{formatCurrency(cashFlowForecast.reduce((sum, f) => sum + f.expected, 0))}</span>
               </p>
             </div>
           </div>
@@ -721,12 +729,12 @@ export function Reports() {
             <div className="flex flex-wrap gap-4 items-end">
               <div className="w-40">
                 <Select
-                  label="期間"
+                  label={t('reports.period')}
                   options={[
-                    { value: 'thisMonth', label: '今月' },
-                    { value: 'lastMonth', label: '先月' },
-                    { value: 'thisYear', label: '今年' },
-                    { value: 'custom', label: 'カスタム' },
+                    { value: 'thisMonth', label: t('reports.thisMonth') },
+                    { value: 'lastMonth', label: t('reports.lastMonth') },
+                    { value: 'thisYear', label: t('reports.thisYear') },
+                    { value: 'custom', label: t('reports.custom') },
                   ]}
                   value={period}
                   onChange={(val) => setPeriod(val as typeof period)}
@@ -736,37 +744,37 @@ export function Reports() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">商品・サービス別売上</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">期間内の領収書に基づく商品別の売上分析</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.productAnalysis')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{language === 'ja' ? '期間内の領収書に基づく商品別の売上分析' : language === 'zh' ? '基于期间内收据的商品销售分析' : 'Product sales analysis based on receipts within the period'}</p>
 
             {/* Category Legend */}
             <div className="flex gap-4 mb-4 text-xs">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span className="text-gray-600 dark:text-gray-400">売上</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.revenue')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-amber-500 rounded"></div>
-                <span className="text-gray-600 dark:text-gray-400">立替経費</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.expenseReimbursement')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span className="text-gray-600 dark:text-gray-400">値引き</span>
+                <span className="text-gray-600 dark:text-gray-400">{t('reports.discount')}</span>
               </div>
             </div>
 
             {productSales.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">データがありません</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t('common.noData')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">順位</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">商品名</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">区分</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">数量</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">金額</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">#</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('products.productName')}</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('products.category')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.quantity')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.amount')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -780,9 +788,9 @@ export function Reports() {
                             item.category === 'expense_reimbursement' ? 'bg-amber-500' :
                             'bg-red-500'
                           }`} title={
-                            item.category === 'revenue' ? '売上' :
-                            item.category === 'expense_reimbursement' ? '立替経費' :
-                            '値引き'
+                            item.category === 'revenue' ? t('reports.revenue') :
+                            item.category === 'expense_reimbursement' ? t('reports.expenseReimbursement') :
+                            t('reports.discount')
                           }></span>
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{item.quantity}</td>
@@ -792,7 +800,7 @@ export function Reports() {
                   </tbody>
                   <tfoot className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <td colSpan={4} className="px-4 py-3 font-medium text-gray-900 dark:text-white">合計</td>
+                      <td colSpan={4} className="px-4 py-3 font-medium text-gray-900 dark:text-white">{t('common.total')}</td>
                       <td className="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">
                         {formatCurrency(productSales.reduce((sum, p) => sum + p.revenue, 0))}
                       </td>
@@ -809,15 +817,15 @@ export function Reports() {
       {activeTab === 'goals' && (
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">月間売上目標</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.monthlyGoal')}</h2>
 
             {/* Goal Setting */}
             <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">目標金額</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ja' ? '目標金額' : language === 'zh' ? '目标金额' : 'Target Amount'}</span>
                 {!editingGoal ? (
                   <Button variant="secondary" size="sm" onClick={() => setEditingGoal(true)}>
-                    編集
+                    {t('common.edit')}
                   </Button>
                 ) : (
                   <div className="flex gap-2">
@@ -828,10 +836,10 @@ export function Reports() {
                         setEditingGoal(false);
                       }}
                     >
-                      保存
+                      {t('common.save')}
                     </Button>
                     <Button variant="secondary" size="sm" onClick={() => setEditingGoal(false)}>
-                      キャンセル
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 )}
@@ -841,11 +849,11 @@ export function Reports() {
                   type="number"
                   value={tempGoal}
                   onChange={(e) => setTempGoal(e.target.value)}
-                  placeholder="例: 1000000"
+                  placeholder={language === 'ja' ? '例: 1000000' : language === 'zh' ? '例: 1000000' : 'e.g. 1000000'}
                 />
               ) : (
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {monthlyGoal > 0 ? formatCurrency(monthlyGoal) : '未設定'}
+                  {monthlyGoal > 0 ? formatCurrency(monthlyGoal) : (language === 'ja' ? '未設定' : language === 'zh' ? '未设置' : 'Not set')}
                 </p>
               )}
             </div>
@@ -855,7 +863,7 @@ export function Reports() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">今月の進捗</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('reports.progress')}</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{goalProgress.toFixed(1)}%</span>
                   </div>
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -870,13 +878,13 @@ export function Reports() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p className="text-sm text-green-700 dark:text-green-400">今月の純売上</p>
+                    <p className="text-sm text-green-700 dark:text-green-400">{t('dashboard.monthlyPureRevenue')}</p>
                     <p className="text-xl font-bold text-green-600">{formatCurrency(thisMonthSales)}</p>
                   </div>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">目標まで</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ja' ? '目標まで' : language === 'zh' ? '距离目标' : 'To goal'}</p>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {monthlyGoal - thisMonthSales > 0 ? formatCurrency(monthlyGoal - thisMonthSales) : '達成!'}
+                      {monthlyGoal - thisMonthSales > 0 ? formatCurrency(monthlyGoal - thisMonthSales) : (language === 'ja' ? '達成!' : language === 'zh' ? '已达成!' : 'Achieved!')}
                     </p>
                   </div>
                 </div>
@@ -884,23 +892,23 @@ export function Reports() {
                 {/* Category Breakdown */}
                 {thisMonthData.expenseReimbursement > 0 && (
                   <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">今月の内訳</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{language === 'ja' ? '今月の内訳' : language === 'zh' ? '本月明细' : 'This month breakdown'}</p>
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="text-xs text-green-600 dark:text-green-400">純売上</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">{t('reports.pureRevenue')}</p>
                         <p className="font-bold text-green-600">{formatCurrency(thisMonthData.pureRevenue)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">立替経費回収</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">{t('reports.expenseReimbursement')}</p>
                         <p className="font-bold text-amber-600">{formatCurrency(thisMonthData.expenseReimbursement)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">領収書合計</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{t('reports.receiptTotal')}</p>
                         <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(thisMonthData.total)}</p>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                      目標進捗は純売上のみで計算されます
+                      {t('reports.goalProgressNote')}
                     </p>
                   </div>
                 )}
@@ -908,7 +916,7 @@ export function Reports() {
                 {goalProgress >= 100 && (
                   <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
                     <p className="text-green-700 dark:text-green-400 font-medium">
-                      目標達成おめでとうございます!
+                      {language === 'ja' ? '目標達成おめでとうございます!' : language === 'zh' ? '恭喜达成目标!' : 'Congratulations on achieving your goal!'}
                     </p>
                   </div>
                 )}

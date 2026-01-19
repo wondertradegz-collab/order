@@ -57,7 +57,7 @@ function calculateCategoryTotals(items: LineItem[]) {
 
 export function Dashboard() {
   const { documents, customers, memos, toggleMemoComplete } = useApp();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isDarkMode } = useTheme();
   const [quickFilter, setQuickFilter] = useState<string>('all');
 
@@ -148,7 +148,8 @@ export function Dashboard() {
     for (let i = 5; i >= 0; i--) {
       const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
-      const monthName = targetDate.toLocaleDateString('ja-JP', { month: 'short' });
+      const locale = language === 'zh' ? 'zh-CN' : language === 'en' ? 'en-US' : 'ja-JP';
+      const monthName = targetDate.toLocaleDateString(locale, { month: 'short' });
 
       const monthReceipts = receipts.filter((r) => {
         const date = new Date(r.createdAt);
@@ -182,9 +183,9 @@ export function Dashboard() {
     const receiptCount = receipts.length;
 
     const documentBreakdown = [
-      { name: '見積書', value: quotationCount, color: '#8b5cf6' },
-      { name: '請求書', value: invoiceCount, color: '#f97316' },
-      { name: '領収書', value: receiptCount, color: '#22c55e' },
+      { name: t('documents.quotation'), value: quotationCount, color: '#8b5cf6' },
+      { name: t('documents.invoice'), value: invoiceCount, color: '#f97316' },
+      { name: t('documents.receipt'), value: receiptCount, color: '#22c55e' },
     ].filter(item => item.value > 0);
 
     // Payment status breakdown (pie chart)
@@ -193,13 +194,13 @@ export function Dashboard() {
     const cancelledInvoices = invoices.filter(i => i.status === 'cancelled').length;
 
     const paymentStatus = [
-      { name: '入金済', value: paidInvoices, color: '#22c55e' },
-      { name: '未入金', value: unpaidInvoices, color: '#f97316' },
-      { name: 'キャンセル', value: cancelledInvoices, color: '#94a3b8' },
+      { name: t('status.paid'), value: paidInvoices, color: '#22c55e' },
+      { name: t('dashboard.unpaid'), value: unpaidInvoices, color: '#f97316' },
+      { name: t('status.cancelled'), value: cancelledInvoices, color: '#94a3b8' },
     ].filter(item => item.value > 0);
 
     return { monthlySales, documentBreakdown, paymentStatus };
-  }, [documents]);
+  }, [documents, t, language]);
 
   const recentDocuments = useMemo(() => {
     let filtered = [...documents];
@@ -255,7 +256,7 @@ export function Dashboard() {
 
   const getCustomerName = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
-    return customer?.companyName || customer?.name || '不明';
+    return customer?.companyName || customer?.name || t('common.unknown');
   };
 
   const isTaskOverdue = (dueDate: string) => {
@@ -277,8 +278,8 @@ export function Dashboard() {
 
   const tips = [
     {
-      title: 'キーボードショートカット',
-      description: 'Cmd/Ctrl + K でクイック検索、Cmd/Ctrl + N で新規請求書作成',
+      title: t('dashboard.tipKeyboardTitle'),
+      description: t('dashboard.tipKeyboardDesc'),
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -286,8 +287,8 @@ export function Dashboard() {
       ),
     },
     {
-      title: 'テンプレート機能',
-      description: 'よく使う明細をテンプレートとして保存すると、次回から簡単に呼び出せます',
+      title: t('dashboard.tipTemplateTitle'),
+      description: t('dashboard.tipTemplateDesc'),
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
@@ -295,8 +296,8 @@ export function Dashboard() {
       ),
     },
     {
-      title: 'PDF出力',
-      description: '書類プレビュー画面からPDFを出力して、そのままメールで送付できます',
+      title: t('dashboard.tipPdfTitle'),
+      description: t('dashboard.tipPdfDesc'),
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -309,8 +310,8 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ダッシュボード</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">売上状況と最新の書類を確認できます</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* Stats Cards */}
@@ -318,7 +319,7 @@ export function Dashboard() {
         <Card hover className="relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">今月の純売上</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.monthlyPureRevenue')}</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.thisMonthSales)}</p>
               {stats.salesChange !== 0 && (
                 <div className={`flex items-center gap-1 mt-2 text-sm ${
@@ -339,10 +340,10 @@ export function Dashboard() {
               {stats.thisMonthExpenseReimbursement > 0 && (
                 <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    + 立替経費回収: {formatCurrency(stats.thisMonthExpenseReimbursement)}
+                    + {t('dashboard.expenseReimbursement')}: {formatCurrency(stats.thisMonthExpenseReimbursement)}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    = 合計: {formatCurrency(stats.thisMonthTotal)}
+                    = {t('dashboard.total')}: {formatCurrency(stats.thisMonthTotal)}
                   </p>
                 </div>
               )}
@@ -369,9 +370,9 @@ export function Dashboard() {
         <Card hover>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">未入金</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.unpaid')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.unpaidAmount)}</p>
-              <Badge color="yellow" dot className="mt-2">{stats.unpaidCount}件</Badge>
+              <Badge color="yellow" dot className="mt-2">{stats.unpaidCount}{t('dashboard.items')}</Badge>
             </div>
             <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,10 +385,10 @@ export function Dashboard() {
         <Card hover>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">期限超過</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.overdueCount}件</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.overdue')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.overdueCount}{t('dashboard.items')}</p>
               {stats.overdueCount > 0 && (
-                <Badge color="red" dot pulse className="mt-2">要対応</Badge>
+                <Badge color="red" dot pulse className="mt-2">{t('dashboard.actionRequired')}</Badge>
               )}
             </div>
             <div className={`p-3 rounded-xl ${stats.overdueCount > 0 ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-50 dark:bg-gray-700 text-gray-400'}`}>
@@ -401,8 +402,8 @@ export function Dashboard() {
         <Card hover>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">顧客数</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCustomers}件</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('dashboard.customerCount')}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCustomers}{t('dashboard.items')}</p>
             </div>
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,8 +423,8 @@ export function Dashboard() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-red-800 dark:text-red-300">支払期限アラート</h3>
-            <Badge color="red">{alertInvoices.length}件</Badge>
+            <h3 className="font-semibold text-red-800 dark:text-red-300">{t('dashboard.paymentDueAlert')}</h3>
+            <Badge color="red">{alertInvoices.length}{t('dashboard.items')}</Badge>
           </div>
           <div className="space-y-2">
             {alertInvoices.slice(0, 3).map((invoice) => {
@@ -448,7 +449,11 @@ export function Dashboard() {
                   <div className="text-right">
                     <p className="font-medium text-gray-900 dark:text-white">{formatCurrency(invoice.total - invoice.paidAmount)}</p>
                     <Badge color={isOverdue ? 'red' : 'yellow'} dot={isOverdue} pulse={isOverdue}>
-                      {isOverdue ? `${Math.abs(daysUntilDue)}日超過` : daysUntilDue === 0 ? '本日期限' : `あと${daysUntilDue}日`}
+                      {isOverdue
+                        ? t('dashboard.daysOverdue').replace('{n}', String(Math.abs(daysUntilDue)))
+                        : daysUntilDue === 0
+                          ? t('dashboard.dueToday')
+                          : t('dashboard.daysRemaining').replace('{n}', String(daysUntilDue))}
                     </Badge>
                   </div>
                 </Link>
@@ -456,7 +461,7 @@ export function Dashboard() {
             })}
             {alertInvoices.length > 3 && (
               <Link to="/invoices?status=unpaid" className="block text-center text-sm text-red-600 dark:text-red-400 hover:text-red-700 pt-2">
-                他{alertInvoices.length - 3}件を表示 →
+                {t('dashboard.viewMore').replace('{n}', String(alertInvoices.length - 3))} →
               </Link>
             )}
           </div>
@@ -485,7 +490,7 @@ export function Dashboard() {
         {/* Monthly Sales Trend */}
         <Card className="lg:col-span-2">
           <CardHeader
-            title="月次売上推移"
+            title={t('dashboard.monthlySalesTrend')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -526,11 +531,11 @@ export function Dashboard() {
                     labelStyle={{ color: isDarkMode ? '#ffffff' : '#111827' }}
                     formatter={(value, name) => [
                       formatCurrency(Number(value) || 0),
-                      name === 'sales' ? '売上（入金済）' : '請求額'
+                      name === 'sales' ? t('dashboard.salesPaid') : t('dashboard.invoicedAmount')
                     ]}
                   />
                   <Legend
-                    formatter={(value) => value === 'sales' ? '売上（入金済）' : '請求額'}
+                    formatter={(value) => value === 'sales' ? t('dashboard.salesPaid') : t('dashboard.invoicedAmount')}
                   />
                   <Area
                     type="monotone"
@@ -557,7 +562,7 @@ export function Dashboard() {
                 <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <p>データがありません</p>
+                <p>{t('common.noData')}</p>
               </div>
             </div>
           )}
@@ -566,7 +571,7 @@ export function Dashboard() {
         {/* Document & Payment Status */}
         <Card>
           <CardHeader
-            title="書類・入金状況"
+            title={t('dashboard.documentPaymentStatus')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -578,7 +583,7 @@ export function Dashboard() {
             {/* Document Breakdown */}
             {chartData.documentBreakdown.length > 0 ? (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">書類種別</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('dashboard.documentType')}</p>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -601,7 +606,7 @@ export function Dashboard() {
                           border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
                           borderRadius: '8px',
                         }}
-                        formatter={(value, name) => [`${value}件`, String(name)]}
+                        formatter={(value, name) => [`${value}${t('dashboard.items')}`, String(name)]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -617,14 +622,14 @@ export function Dashboard() {
               </div>
             ) : (
               <div className="text-center text-gray-500 dark:text-gray-400 py-4">
-                <p className="text-sm">書類がありません</p>
+                <p className="text-sm">{t('dashboard.noDocumentsYet')}</p>
               </div>
             )}
 
             {/* Payment Status */}
             {chartData.paymentStatus.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">請求書入金状況</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('dashboard.invoicePaymentStatus')}</p>
                 <div className="h-32">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -647,7 +652,7 @@ export function Dashboard() {
                           border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
                           borderRadius: '8px',
                         }}
-                        formatter={(value, name) => [`${value}件`, String(name)]}
+                        formatter={(value, name) => [`${value}${t('dashboard.items')}`, String(name)]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -678,8 +683,8 @@ export function Dashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">見積書作成</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">新しい見積書を作成</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createQuotation')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newQuotation')}</p>
           </div>
         </Link>
         <Link
@@ -692,8 +697,8 @@ export function Dashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">請求書作成</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">新しい請求書を作成</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createInvoice')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newInvoice')}</p>
           </div>
         </Link>
         <Link
@@ -706,8 +711,8 @@ export function Dashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">領収書作成</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">新しい領収書を作成</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('dashboard.createReceipt')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboard.newReceipt')}</p>
           </div>
         </Link>
       </div>
@@ -764,7 +769,7 @@ export function Dashboard() {
         {/* Recent Documents */}
         <Card>
           <CardHeader
-            title="最近の書類"
+            title={t('dashboard.recentDocuments')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -772,7 +777,7 @@ export function Dashboard() {
             }
             action={
               <Link to="/invoices" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700">
-                すべて表示 →
+                {t('dashboard.viewAll')} →
               </Link>
             }
           />
@@ -780,10 +785,10 @@ export function Dashboard() {
           <div className="mb-4">
             <ChipGroup
               options={[
-                { value: 'all', label: 'すべて', count: documents.length },
-                { value: 'quotation', label: '見積書', count: stats.totalQuotations },
-                { value: 'invoice', label: '請求書', count: stats.totalInvoices },
-                { value: 'receipt', label: '領収書', count: stats.totalReceipts },
+                { value: 'all', label: t('common.all'), count: documents.length },
+                { value: 'quotation', label: t('documents.quotation'), count: stats.totalQuotations },
+                { value: 'invoice', label: t('documents.invoice'), count: stats.totalInvoices },
+                { value: 'receipt', label: t('documents.receipt'), count: stats.totalReceipts },
               ]}
               value={quickFilter}
               onChange={(val) => setQuickFilter(val as string)}
@@ -797,8 +802,8 @@ export function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               }
-              title="書類がありません"
-              description="最初の書類を作成しましょう"
+              title={t('dashboard.noDocumentsYet')}
+              description={t('dashboard.createFirstDocument')}
             />
           ) : (
             <div className="space-y-2">
@@ -810,7 +815,7 @@ export function Dashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <Badge color={getDocTypeColor(doc.type)} dot>
-                      {getDocTypeName(doc.type)}
+                      {getDocTypeName(doc.type, t)}
                     </Badge>
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">{doc.documentNumber}</p>
@@ -830,7 +835,7 @@ export function Dashboard() {
         {/* Unpaid Invoices */}
         <Card>
           <CardHeader
-            title="未入金の請求書"
+            title={t('dashboard.unpaidInvoices')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -838,7 +843,7 @@ export function Dashboard() {
             }
             action={
               <Link to="/invoices?status=unpaid" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700">
-                すべて表示 →
+                {t('dashboard.viewAll')} →
               </Link>
             }
           />
@@ -849,8 +854,8 @@ export function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               }
-              title="未入金の請求書はありません"
-              description="すべての請求が入金済みです"
+              title={t('dashboard.noUnpaidInvoices')}
+              description={t('dashboard.allPaid')}
             />
           ) : (
             <div className="space-y-2">
@@ -869,7 +874,7 @@ export function Dashboard() {
                     <div className="text-right">
                       <p className="font-medium text-gray-900 dark:text-white">{formatCurrency(invoice.total - invoice.paidAmount)}</p>
                       <Badge color={isOverdue ? 'red' : 'gray'} dot={isOverdue}>
-                        期限: {formatDate(invoice.dueDate)}
+                        {t('dashboard.dueDateLabel')}: {formatDate(invoice.dueDate)}
                       </Badge>
                     </div>
                   </Link>
@@ -889,7 +894,7 @@ export function Dashboard() {
             </svg>
           </div>
           <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.totalQuotations}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">見積書</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.quotation')}</p>
         </Card>
         <Card hover className="text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/50 mb-3">
@@ -898,7 +903,7 @@ export function Dashboard() {
             </svg>
           </div>
           <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{stats.totalInvoices}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">請求書</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.invoice')}</p>
         </Card>
         <Card hover className="text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/50 mb-3">
@@ -907,7 +912,7 @@ export function Dashboard() {
             </svg>
           </div>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.totalReceipts}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">領収書</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('documents.receipt')}</p>
         </Card>
       </div>
     </div>
@@ -923,11 +928,11 @@ function getDocTypeColor(type: string): 'purple' | 'yellow' | 'green' | 'gray' {
   return colors[type] || 'gray';
 }
 
-function getDocTypeName(type: string): string {
-  const names: Record<string, string> = {
-    quotation: '見積',
-    invoice: '請求',
-    receipt: '領収',
+function getDocTypeName(type: string, t: (key: string) => string): string {
+  const typeMap: Record<string, string> = {
+    quotation: 'documents.quotationShort',
+    invoice: 'documents.invoiceShort',
+    receipt: 'documents.receiptShort',
   };
-  return names[type] || type;
+  return typeMap[type] ? t(typeMap[type]) : type;
 }

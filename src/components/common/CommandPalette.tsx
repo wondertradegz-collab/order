@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { formatCurrency, getDocumentTypeLabel } from '../../utils/format';
 
 interface CommandPaletteProps {
@@ -26,6 +27,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { documents, customers, products } = useApp();
+  const { t } = useLanguage();
 
   // Reset state when opening
   useEffect(() => {
@@ -38,13 +40,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   // Quick actions
   const quickActions: SearchResult[] = useMemo(() => [
-    { id: 'new-quotation', type: 'action', title: '新規見積書を作成', icon: '📝', path: '/quotations/new' },
-    { id: 'new-invoice', type: 'action', title: '新規請求書を作成', icon: '📄', path: '/invoices/new' },
-    { id: 'new-receipt', type: 'action', title: '新規領収書を作成', icon: '🧾', path: '/receipts/new' },
-    { id: 'new-customer', type: 'action', title: '新規顧客を登録', icon: '👤', path: '/customers' },
-    { id: 'goto-reports', type: 'action', title: 'レポートを表示', icon: '📊', path: '/reports' },
-    { id: 'goto-settings', type: 'action', title: '設定を開く', icon: '⚙️', path: '/settings' },
-  ], []);
+    { id: 'new-quotation', type: 'action', title: t('dashboard.createQuotation'), icon: '📝', path: '/quotations/new' },
+    { id: 'new-invoice', type: 'action', title: t('dashboard.createInvoice'), icon: '📄', path: '/invoices/new' },
+    { id: 'new-receipt', type: 'action', title: t('dashboard.createReceipt'), icon: '🧾', path: '/receipts/new' },
+    { id: 'new-customer', type: 'action', title: t('commandPalette.newCustomer'), icon: '👤', path: '/customers' },
+    { id: 'goto-reports', type: 'action', title: t('commandPalette.viewReports'), icon: '📊', path: '/reports' },
+    { id: 'goto-settings', type: 'action', title: t('commandPalette.openSettings'), icon: '⚙️', path: '/settings' },
+  ], [t]);
 
   const results = useMemo(() => {
     if (!query.trim()) {
@@ -65,7 +67,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           id: doc.id,
           type: 'document',
           title: `${getDocumentTypeLabel(doc.type)} ${doc.documentNumber}`,
-          subtitle: `${customer?.name || '不明'} - ${formatCurrency(doc.total)}`,
+          subtitle: `${customer?.name || t('common.unknown')} - ${formatCurrency(doc.total)}`,
           icon: doc.type === 'quotation' ? '📝' : doc.type === 'invoice' ? '📄' : '🧾',
           path: `/${doc.type}s/${doc.id}`,
         });
@@ -115,7 +117,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     });
 
     return searchResults.slice(0, 10);
-  }, [query, documents, customers, products, quickActions]);
+  }, [query, documents, customers, products, quickActions, t]);
 
   // Handle query change and reset selected index
   const handleQueryChange = useCallback((newQuery: string) => {
@@ -186,7 +188,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
               ref={inputRef}
               type="text"
               className="flex-1 px-4 py-4 text-gray-900 dark:text-white bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-gray-400"
-              placeholder="書類、顧客、商品を検索..."
+              placeholder={t('commandPalette.searchPlaceholder')}
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -200,7 +202,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           <div className="max-h-80 overflow-y-auto">
             {results.length === 0 ? (
               <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                検索結果がありません
+                {t('commandPalette.noResults')}
               </div>
             ) : (
               <ul className="py-2">
@@ -227,10 +229,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                         )}
                       </div>
                       <span className="text-xs text-gray-400 dark:text-gray-500">
-                        {result.type === 'document' && '書類'}
-                        {result.type === 'customer' && '顧客'}
-                        {result.type === 'product' && '商品'}
-                        {result.type === 'action' && 'アクション'}
+                        {result.type === 'document' && t('commandPalette.document')}
+                        {result.type === 'customer' && t('commandPalette.customer')}
+                        {result.type === 'product' && t('commandPalette.product')}
+                        {result.type === 'action' && t('commandPalette.action')}
                       </span>
                     </button>
                   </li>
@@ -243,9 +245,9 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">↑↓</kbd>
-              <span>移動</span>
+              <span>{t('commandPalette.navigate')}</span>
               <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded ml-2">Enter</kbd>
-              <span>選択</span>
+              <span>{t('commandPalette.select')}</span>
             </div>
           </div>
         </div>

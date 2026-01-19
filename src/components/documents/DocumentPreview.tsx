@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { formatDate, getDocumentTypeLabel } from '../../utils/format';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { Document, Customer, CompanyInfo, LineItem, Receipt, ElectronicStamp } from '../../types';
 
 interface DocumentPreviewProps {
@@ -68,6 +69,8 @@ const StampDisplay = ({ stamp }: { stamp: ElectronicStamp }) => {
 
 export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ document, customer, companyInfo, stamps = [] }, ref) => {
+    const { t } = useLanguage();
+
     // Separate taxable and non-taxable items
     const taxableItems = document.items.filter((item) => item.taxRate > 0);
     const nonTaxableItems = document.items.filter((item) => item.taxRate === 0);
@@ -83,11 +86,22 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
     const getDocumentTitle = () => {
       switch (document.type) {
         case 'quotation':
-          return 'ご見積書';
+          return t('documentPreview.quotationTitle');
         case 'invoice':
-          return 'ご請求書';
+          return t('documentPreview.invoiceTitle');
         case 'receipt':
-          return '領収書';
+          return t('documentPreview.receiptTitle');
+      }
+    };
+
+    const getDocumentIntro = () => {
+      switch (document.type) {
+        case 'quotation':
+          return t('documentPreview.quotationIntro');
+        case 'invoice':
+          return t('documentPreview.invoiceIntro');
+        case 'receipt':
+          return t('documentPreview.receiptIntro');
       }
     };
 
@@ -132,7 +146,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
           <div className="w-1/2">
             <div className="border-b border-black pb-1 mb-2">
               <p className="font-semibold">
-                {customer?.companyName || customer?.name || ''}様
+                {customer?.companyName || customer?.name || ''}{t('documentPreview.dear')}
               </p>
             </div>
 
@@ -144,8 +158,8 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             )}
 
             <p className="text-xs mb-2">
-              下記のとおりご{document.type === 'quotation' ? '見積' : document.type === 'receipt' ? '領収' : '請求'}申し上げます。<br />
-              何卒、宜しくお願い申し上げます。
+              {getDocumentIntro()}<br />
+              {t('documentPreview.kindRegards')}
             </p>
 
             {/* Total Amount Box */}
@@ -156,7 +170,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             {/* Bank Info (for invoices) */}
             {document.type === 'invoice' && companyInfo.bankName && (
               <div className="border-t border-black pt-2 text-xs">
-                <p className="font-semibold mb-1">お振込先</p>
+                <p className="font-semibold mb-1">{t('documentPreview.bankTransferInfo')}</p>
                 <p>{companyInfo.bankName} {companyInfo.bankBranch}</p>
                 <p>{companyInfo.accountType} {companyInfo.accountNumber}</p>
                 <p>{companyInfo.accountName}</p>
@@ -166,14 +180,14 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
             {/* Receipt specific: Proviso */}
             {getProviso() && (
               <div className="border-t border-black pt-2 text-xs mt-2">
-                <p>但し、{getProviso()}</p>
+                <p>{t('documentPreview.provisoPrefix')}{getProviso()}</p>
               </div>
             )}
 
             {/* Receipt: Revenue Stamp indication for amounts >= 50,000 yen */}
             {document.type === 'receipt' && document.total >= 50000 && (
               <div className="border border-dashed border-gray-400 mt-3 p-2 text-center">
-                <p className="text-xs text-gray-600">収入印紙</p>
+                <p className="text-xs text-gray-600">{t('documentPreview.revenueStamp')}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {document.total >= 5000000 ? '¥10,000' : document.total >= 1000000 ? '¥2,000' : '¥200'}
                 </p>
@@ -203,7 +217,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               <p className="font-semibold">{companyInfo.name || ''}</p>
               {companyInfo.address && <p className="text-xs">{companyInfo.address}</p>}
               {companyInfo.registrationNumber && (
-                <p className="text-xs">登録番号：{companyInfo.registrationNumber}</p>
+                <p className="text-xs">{t('documentPreview.registrationNo')}：{companyInfo.registrationNumber}</p>
               )}
             </div>
 
@@ -212,8 +226,8 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               <table className="border-collapse text-center text-xs">
                 <thead>
                   <tr>
-                    <th className="border border-black w-16 px-2 py-1">承認</th>
-                    <th className="border border-black w-16 px-2 py-1">担当</th>
+                    <th className="border border-black w-16 px-2 py-1">{t('documentPreview.approval')}</th>
+                    <th className="border border-black w-16 px-2 py-1">{t('documentPreview.inCharge')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,13 +249,13 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
         <table className="w-full border-collapse text-xs mb-2">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-black px-1 py-1 w-8 text-center">No.</th>
-              <th className="border border-black px-2 py-1 text-left">項目</th>
-              <th className="border border-black px-1 py-1 w-12 text-center">数量</th>
-              <th className="border border-black px-1 py-1 w-10 text-center">単位</th>
-              <th className="border border-black px-2 py-1 w-20 text-right">単価</th>
-              <th className="border border-black px-2 py-1 w-20 text-right">小計</th>
-              <th className="border border-black px-1 py-1 w-12 text-center">税</th>
+              <th className="border border-black px-1 py-1 w-8 text-center">{t('documentPreview.itemNo')}</th>
+              <th className="border border-black px-2 py-1 text-left">{t('documentPreview.itemColumn')}</th>
+              <th className="border border-black px-1 py-1 w-12 text-center">{t('common.quantity')}</th>
+              <th className="border border-black px-1 py-1 w-10 text-center">{t('documentPreview.unit')}</th>
+              <th className="border border-black px-2 py-1 w-20 text-right">{t('common.unitPrice')}</th>
+              <th className="border border-black px-2 py-1 w-20 text-right">{t('common.subtotal')}</th>
+              <th className="border border-black px-1 py-1 w-12 text-center">{t('common.tax')}</th>
             </tr>
           </thead>
           <tbody>
@@ -270,7 +284,7 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                     {isRealItem && itemSubtotal > 0 ? formatNumber(itemSubtotal) : ''}
                   </td>
                   <td className="border border-black px-1 py-1 text-center text-xs">
-                    {isRealItem && item.quantity > 0 ? (item.taxRate > 0 ? '課税' : '非課税') : ''}
+                    {isRealItem && item.quantity > 0 ? (item.taxRate > 0 ? t('documentPreview.taxable') : t('documentPreview.nonTaxable')) : ''}
                   </td>
                 </tr>
               );
@@ -285,25 +299,25 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               {/* Taxable subtotal */}
               {taxableSubtotal > 0 && (
                 <tr>
-                  <td className="border border-black px-2 py-1 bg-gray-50">課税対象小計</td>
+                  <td className="border border-black px-2 py-1 bg-gray-50">{t('documentPreview.taxableSubtotal')}</td>
                   <td className="border border-black px-2 py-1 text-right">{formatNumber(taxableSubtotal)}</td>
                 </tr>
               )}
               {/* Non-taxable subtotal */}
               {nonTaxableSubtotal > 0 && (
                 <tr>
-                  <td className="border border-black px-2 py-1 bg-gray-50">非課税対象小計</td>
+                  <td className="border border-black px-2 py-1 bg-gray-50">{t('documentPreview.nonTaxableSubtotal')}</td>
                   <td className="border border-black px-2 py-1 text-right">{formatNumber(nonTaxableSubtotal)}</td>
                 </tr>
               )}
               {/* Tax amount */}
               <tr>
-                <td className="border border-black px-2 py-1 bg-gray-50">消費税（10%）</td>
+                <td className="border border-black px-2 py-1 bg-gray-50">{t('documentPreview.taxAmount')}</td>
                 <td className="border border-black px-2 py-1 text-right">{formatNumber(taxAmount)}</td>
               </tr>
               {/* Total */}
               <tr className="font-bold">
-                <td className="border border-black px-2 py-1 bg-gray-100">合計金額</td>
+                <td className="border border-black px-2 py-1 bg-gray-100">{t('documentPreview.totalAmount')}</td>
                 <td className="border border-black px-2 py-1 text-right bg-gray-100">{formatNumber(document.total)}</td>
               </tr>
             </tbody>
@@ -313,21 +327,21 @@ export const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
         {/* Due Date (for invoices) */}
         {document.type === 'invoice' && 'dueDate' in document && (
           <div className="text-xs mt-2">
-            <p>お支払期限: {formatDate(document.dueDate, 'long')}</p>
+            <p>{t('documentPreview.paymentDueLabel')}: {formatDate(document.dueDate, 'long')}</p>
           </div>
         )}
 
         {/* Quotation validity */}
         {document.type === 'quotation' && 'validUntil' in document && document.validUntil && (
           <div className="text-xs mt-2">
-            <p>見積有効期限: {formatDate(document.validUntil, 'long')}</p>
+            <p>{t('documentPreview.validUntilLabel')}: {formatDate(document.validUntil, 'long')}</p>
           </div>
         )}
 
         {/* Additional Notes */}
         {document.notes && document.notes.split('\n').length > 1 && (
           <div className="text-xs mt-4 border-t border-gray-300 pt-2">
-            <p className="font-semibold mb-1">備考</p>
+            <p className="font-semibold mb-1">{t('common.notes')}</p>
             <p className="whitespace-pre-wrap">{document.notes.split('\n').slice(1).join('\n')}</p>
           </div>
         )}

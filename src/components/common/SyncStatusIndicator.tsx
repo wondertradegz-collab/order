@@ -1,13 +1,15 @@
 import { useApp } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export function SyncStatusIndicator() {
   const { syncStatus, isCloudEnabled, lastSyncTime, forceSync } = useApp();
+  const { t } = useLanguage();
 
   if (!isCloudEnabled) {
     return (
       <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
         <div className="w-2 h-2 rounded-full bg-gray-400" />
-        <span>ローカル</span>
+        <span>{t('sync.local')}</span>
       </div>
     );
   }
@@ -30,15 +32,15 @@ export function SyncStatusIndicator() {
   const getStatusText = () => {
     switch (syncStatus) {
       case 'synced':
-        return '同期済み';
+        return t('sync.synced');
       case 'syncing':
-        return '同期中...';
+        return t('sync.syncing');
       case 'error':
-        return '同期エラー';
+        return t('sync.error');
       case 'offline':
-        return 'オフライン';
+        return t('sync.offline');
       default:
-        return '待機中';
+        return t('sync.waiting');
     }
   };
 
@@ -54,7 +56,7 @@ export function SyncStatusIndicator() {
         onClick={forceSync}
         disabled={syncStatus === 'syncing'}
         className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50 transition-colors"
-        title="クリックで手動同期"
+        title={t('sync.clickToSync')}
       >
         <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +66,7 @@ export function SyncStatusIndicator() {
       </button>
       {lastSyncTime && syncStatus === 'synced' && (
         <span className="text-[10px] text-gray-400 dark:text-gray-500 pl-4">
-          最終: {formatTime(lastSyncTime)}
+          {t('sync.lastSync')}: {formatTime(lastSyncTime)}
         </span>
       )}
     </div>

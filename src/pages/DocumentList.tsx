@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button, Input, Select, ConfirmModal, ChipGroup, Badge, Card, EmptyState, DateInput } from '../components/common';
 import { AccountingExportModal } from '../components/documents';
 import {
   formatCurrency,
   formatDate,
-  getStatusLabel,
   getStatusColor,
-  getDocumentTypeLabel,
 } from '../utils/format';
 import type { DocumentType, Document, Invoice } from '../types';
 
@@ -21,6 +20,7 @@ type SortOption = 'newest' | 'oldest' | 'amount_high' | 'amount_low';
 export function DocumentList({ type }: DocumentListProps) {
   const navigate = useNavigate();
   const { documents, customers, deleteDocument, deleteDocuments } = useApp();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
@@ -31,8 +31,10 @@ export function DocumentList({ type }: DocumentListProps) {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showAccountingExport, setShowAccountingExport] = useState(false);
 
-  const typeLabel = getDocumentTypeLabel(type);
+  const typeLabel = t(`documents.${type}`);
   const basePath = `/${type}s`;
+
+  const getStatusLabel = (status: string) => t(`status.${status}`);
 
   const filteredDocuments = useMemo(() => {
     let docs = documents.filter((d) => d.type === type);
@@ -79,7 +81,7 @@ export function DocumentList({ type }: DocumentListProps) {
 
   const getCustomerName = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
-    return customer?.companyName || customer?.name || '不明';
+    return customer?.companyName || customer?.name || t('common.unknown');
   };
 
   const handleDelete = () => {
@@ -114,23 +116,23 @@ export function DocumentList({ type }: DocumentListProps) {
   };
 
   const statusOptions = [
-    { value: 'all', label: 'すべて' },
-    { value: 'draft', label: '下書き' },
-    { value: 'sent', label: '送付済み' },
+    { value: 'all', label: t('common.all') },
+    { value: 'draft', label: t('status.draft') },
+    { value: 'sent', label: t('status.sent') },
     ...(type === 'invoice'
       ? [
-          { value: 'paid', label: '入金済み' },
-          { value: 'overdue', label: '期限超過' },
+          { value: 'paid', label: t('status.paid') },
+          { value: 'overdue', label: t('status.overdue') },
         ]
       : []),
-    { value: 'cancelled', label: 'キャンセル' },
+    { value: 'cancelled', label: t('status.cancelled') },
   ];
 
   const sortOptions = [
-    { value: 'newest', label: '新しい順' },
-    { value: 'oldest', label: '古い順' },
-    { value: 'amount_high', label: '金額: 高い順' },
-    { value: 'amount_low', label: '金額: 低い順' },
+    { value: 'newest', label: t('sort.newest') },
+    { value: 'oldest', label: t('sort.oldest') },
+    { value: 'amount_high', label: t('sort.amountHigh') },
+    { value: 'amount_low', label: t('sort.amountLow') },
   ];
 
   // Calculate status counts
@@ -151,13 +153,13 @@ export function DocumentList({ type }: DocumentListProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{typeLabel}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{typeLabel}の一覧と管理</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{typeLabel}{t('documents.listSubtitle')}</p>
         </div>
         <Button onClick={() => navigate(`${basePath}/new`)}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          {typeLabel}を作成
+          {typeLabel}{t('documents.createNew')}
         </Button>
       </div>
 
@@ -179,7 +181,7 @@ export function DocumentList({ type }: DocumentListProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
             <Input
-              placeholder="番号、顧客名で検索..."
+              placeholder={t('documents.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -189,7 +191,7 @@ export function DocumentList({ type }: DocumentListProps) {
               <DateInput
                 value={dateFrom}
                 onChange={(value) => setDateFrom(value)}
-                placeholder="開始日"
+                placeholder={t('documents.startDate')}
               />
             </div>
             <span className="text-gray-400">〜</span>
@@ -197,7 +199,7 @@ export function DocumentList({ type }: DocumentListProps) {
               <DateInput
                 value={dateTo}
                 onChange={(value) => setDateTo(value)}
-                placeholder="終了日"
+                placeholder={t('documents.endDate')}
               />
             </div>
           </div>
@@ -214,13 +216,13 @@ export function DocumentList({ type }: DocumentListProps) {
         <div className="flex items-center gap-4">
           {selectedIds.size > 0 && (
             <>
-              <Badge color="blue">{selectedIds.size}件選択中</Badge>
+              <Badge color="blue">{selectedIds.size}{t('documents.itemsSelected')}</Badge>
               <Button
                 variant="danger"
                 size="sm"
                 onClick={() => setShowBulkDeleteConfirm(true)}
               >
-                一括削除
+                {t('documents.bulkDelete')}
               </Button>
             </>
           )}
@@ -235,7 +237,7 @@ export function DocumentList({ type }: DocumentListProps) {
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              会計ソフト連携
+              {t('documents.accountingExport')}
             </Button>
           )}
           <Button
@@ -244,8 +246,8 @@ export function DocumentList({ type }: DocumentListProps) {
             onClick={() => {
               // CSV Export
               const csvHeader = type === 'invoice'
-                ? ['書類番号', '顧客名', '発行日', '支払期限', '金額', '入金済', 'ステータス']
-                : ['書類番号', '顧客名', '発行日', '金額', 'ステータス'];
+                ? [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('documents.dueDate'), t('common.amount'), t('documents.paidAmount'), t('common.status')]
+                : [t('documents.documentNumber'), t('documents.customer'), t('documents.issueDate'), t('common.amount'), t('common.status')];
 
               const csvRows = filteredDocuments.map((doc) => {
                 const customerName = getCustomerName(doc.customerId);
@@ -286,7 +288,7 @@ export function DocumentList({ type }: DocumentListProps) {
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            CSV出力
+            {t('documents.csvExport')}
           </Button>
         </div>
       </div>
@@ -300,9 +302,9 @@ export function DocumentList({ type }: DocumentListProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             }
-            title={`${typeLabel}がありません`}
-            description={`最初の${typeLabel}を作成してください`}
-            action={<Button onClick={() => navigate(`${basePath}/new`)}>{typeLabel}を作成</Button>}
+            title={`${typeLabel}${t('documents.noDocumentsSuffix')}`}
+            description={`${t('documents.createFirstHint')}${typeLabel}`}
+            action={<Button onClick={() => navigate(`${basePath}/new`)}>{typeLabel}{t('documents.createNew')}</Button>}
           />
         </Card>
       ) : (
@@ -321,27 +323,27 @@ export function DocumentList({ type }: DocumentListProps) {
                     />
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    番号
+                    {t('documents.number')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    顧客
+                    {t('documents.customer')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    発行日
+                    {t('documents.issueDate')}
                   </th>
                   {type === 'invoice' && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      支払期限
+                      {t('documents.dueDate')}
                     </th>
                   )}
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    金額
+                    {t('common.amount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                    {t('common.status')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -458,9 +460,9 @@ export function DocumentList({ type }: DocumentListProps) {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={`${typeLabel}を削除`}
-        message={`「${deleteTarget?.documentNumber}」を削除しますか？この操作は取り消せません。`}
-        confirmText="削除"
+        title={`${typeLabel}${t('documents.deleteTitle')}`}
+        message={t('documents.deleteMessage').replace('{number}', deleteTarget?.documentNumber || '')}
+        confirmText={t('common.delete')}
         variant="danger"
       />
 
@@ -469,9 +471,9 @@ export function DocumentList({ type }: DocumentListProps) {
         isOpen={showBulkDeleteConfirm}
         onClose={() => setShowBulkDeleteConfirm(false)}
         onConfirm={handleBulkDelete}
-        title={`${typeLabel}を一括削除`}
-        message={`選択した${selectedIds.size}件の${typeLabel}を削除しますか？この操作は取り消せません。`}
-        confirmText="一括削除"
+        title={`${typeLabel}${t('documents.bulkDeleteTitle')}`}
+        message={t('documents.bulkDeleteMessage').replace('{n}', String(selectedIds.size))}
+        confirmText={t('documents.bulkDelete')}
         variant="danger"
       />
 

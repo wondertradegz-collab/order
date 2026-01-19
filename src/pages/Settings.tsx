@@ -61,73 +61,94 @@ const StampPreview = ({ stamp }: { stamp: Omit<ElectronicStamp, 'id' | 'createdA
 // Password Settings Section Component
 const PasswordSettingsSection = () => {
   const { changePassword, logout } = useAuth();
+  const { language } = useLanguage();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const labels = {
+    title: language === 'ja' ? 'パスワード設定' : language === 'zh' ? '密码设置' : 'Password Settings',
+    subtitle: language === 'ja' ? 'ログインパスワードを変更します' : language === 'zh' ? '更改登录密码' : 'Change your login password',
+    currentPassword: language === 'ja' ? '現在のパスワード' : language === 'zh' ? '当前密码' : 'Current Password',
+    newPassword: language === 'ja' ? '新しいパスワード' : language === 'zh' ? '新密码' : 'New Password',
+    confirmNewPassword: language === 'ja' ? '新しいパスワード（確認）' : language === 'zh' ? '确认新密码' : 'Confirm New Password',
+    enterCurrentPassword: language === 'ja' ? '現在のパスワードを入力' : language === 'zh' ? '输入当前密码' : 'Enter current password',
+    enterNewPassword: language === 'ja' ? '新しいパスワードを入力' : language === 'zh' ? '输入新密码' : 'Enter new password',
+    reenterNewPassword: language === 'ja' ? '新しいパスワードを再入力' : language === 'zh' ? '重新输入新密码' : 'Re-enter new password',
+    minChars: language === 'ja' ? '4文字以上で設定してください' : language === 'zh' ? '请设置4位以上字符' : 'Must be at least 4 characters',
+    changePassword: language === 'ja' ? 'パスワードを変更' : language === 'zh' ? '更改密码' : 'Change Password',
+    logout: language === 'ja' ? 'ログアウト' : language === 'zh' ? '退出登录' : 'Logout',
+    errorEnterCurrent: language === 'ja' ? '現在のパスワードを入力してください' : language === 'zh' ? '请输入当前密码' : 'Please enter current password',
+    errorEnterNew: language === 'ja' ? '新しいパスワードを入力してください' : language === 'zh' ? '请输入新密码' : 'Please enter new password',
+    errorMinChars: language === 'ja' ? 'パスワードは4文字以上で設定してください' : language === 'zh' ? '密码至少4位字符' : 'Password must be at least 4 characters',
+    errorNoMatch: language === 'ja' ? '新しいパスワードが一致しません' : language === 'zh' ? '新密码不匹配' : 'New passwords do not match',
+    successChanged: language === 'ja' ? 'パスワードを変更しました' : language === 'zh' ? '密码已更改' : 'Password changed successfully',
+    errorWrongPassword: language === 'ja' ? '現在のパスワードが正しくありません' : language === 'zh' ? '当前密码不正确' : 'Current password is incorrect',
+  };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
     if (!currentPassword) {
-      setMessage({ type: 'error', text: '現在のパスワードを入力してください' });
+      setMessage({ type: 'error', text: labels.errorEnterCurrent });
       return;
     }
 
     if (!newPassword) {
-      setMessage({ type: 'error', text: '新しいパスワードを入力してください' });
+      setMessage({ type: 'error', text: labels.errorEnterNew });
       return;
     }
 
     if (newPassword.length < 4) {
-      setMessage({ type: 'error', text: 'パスワードは4文字以上で設定してください' });
+      setMessage({ type: 'error', text: labels.errorMinChars });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: '新しいパスワードが一致しません' });
+      setMessage({ type: 'error', text: labels.errorNoMatch });
       return;
     }
 
     const success = changePassword(currentPassword, newPassword);
     if (success) {
-      setMessage({ type: 'success', text: 'パスワードを変更しました' });
+      setMessage({ type: 'success', text: labels.successChanged });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } else {
-      setMessage({ type: 'error', text: '現在のパスワードが正しくありません' });
+      setMessage({ type: 'error', text: labels.errorWrongPassword });
     }
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">パスワード設定</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">ログインパスワードを変更します</p>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.title}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.subtitle}</p>
 
       <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
         <Input
           type="password"
-          label="現在のパスワード"
+          label={labels.currentPassword}
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
-          placeholder="現在のパスワードを入力"
+          placeholder={labels.enterCurrentPassword}
         />
         <Input
           type="password"
-          label="新しいパスワード"
+          label={labels.newPassword}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="新しいパスワードを入力"
-          helperText="4文字以上で設定してください"
+          placeholder={labels.enterNewPassword}
+          helperText={labels.minChars}
         />
         <Input
           type="password"
-          label="新しいパスワード（確認）"
+          label={labels.confirmNewPassword}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="新しいパスワードを再入力"
+          placeholder={labels.reenterNewPassword}
         />
 
         {message && (
@@ -141,7 +162,7 @@ const PasswordSettingsSection = () => {
         )}
 
         <div className="flex gap-3">
-          <Button type="submit">パスワードを変更</Button>
+          <Button type="submit">{labels.changePassword}</Button>
         </div>
       </form>
 
@@ -150,7 +171,7 @@ const PasswordSettingsSection = () => {
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          ログアウト
+          {labels.logout}
         </Button>
       </div>
     </div>
@@ -159,20 +180,44 @@ const PasswordSettingsSection = () => {
 
 // Auto Backup Section Component
 const AutoBackupSection = () => {
+  const { language } = useLanguage();
   const [settings, setSettings] = useState<AutoBackupSettings>(getAutoBackupSettings);
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const labels = {
+    title: language === 'ja' ? '自動バックアップ' : language === 'zh' ? '自动备份' : 'Auto Backup',
+    subtitle: language === 'ja' ? '毎月自動でバックアップを取得し、Gmailに送信します' : language === 'zh' ? '每月自动备份并发送到Gmail' : 'Automatically backup monthly and send to Gmail',
+    enableMonthly: language === 'ja' ? '月次自動バックアップを有効にする' : language === 'zh' ? '启用月度自动备份' : 'Enable monthly auto backup',
+    enableDescription: language === 'ja' ? 'アプリ起動時に前回から1ヶ月経過していれば自動でバックアップを送信' : language === 'zh' ? '应用启动时如果距上次超过1个月则自动发送备份' : 'Auto send backup if 1 month has passed since last backup',
+    emailAddress: language === 'ja' ? '送信先メールアドレス' : language === 'zh' ? '发送邮箱地址' : 'Email Address',
+    emailHelper: language === 'ja' ? 'バックアップファイルの送信先' : language === 'zh' ? '备份文件发送目标' : 'Destination for backup files',
+    lastBackup: language === 'ja' ? '最終バックアップ' : language === 'zh' ? '上次备份' : 'Last Backup',
+    advancedSettings: language === 'ja' ? '詳細設定（EmailJS）' : language === 'zh' ? '高级设置（EmailJS）' : 'Advanced Settings (EmailJS)',
+    emailjsInfo: language === 'ja' ? 'EmailJS を使用すると完全自動でメール送信できます' : language === 'zh' ? '使用EmailJS可以完全自动发送邮件' : 'Use EmailJS for fully automatic email sending',
+    emailjsSteps: language === 'ja'
+      ? ['EmailJS で無料アカウントを作成', 'Gmail サービスを追加', 'テンプレートを作成（変数: to_email, backup_date, backup_data）', '以下にIDを入力']
+      : language === 'zh'
+      ? ['在EmailJS创建免费账户', '添加Gmail服务', '创建模板（变量: to_email, backup_date, backup_data）', '在下方输入ID']
+      : ['Create free account at EmailJS', 'Add Gmail service', 'Create template (variables: to_email, backup_date, backup_data)', 'Enter IDs below'],
+    saveSettings: language === 'ja' ? '設定を保存' : language === 'zh' ? '保存设置' : 'Save Settings',
+    sendNow: language === 'ja' ? '今すぐバックアップを送信' : language === 'zh' ? '立即发送备份' : 'Send Backup Now',
+    sending: language === 'ja' ? '送信中...' : language === 'zh' ? '发送中...' : 'Sending...',
+    savedSuccess: language === 'ja' ? '自動バックアップ設定を保存しました' : language === 'zh' ? '自动备份设置已保存' : 'Auto backup settings saved',
+    enterEmail: language === 'ja' ? 'メールアドレスを入力してください' : language === 'zh' ? '请输入邮箱地址' : 'Please enter email address',
+    downloadedInfo: language === 'ja' ? 'バックアップファイルをダウンロードしました。Gmailでファイルを添付して送信してください。' : language === 'zh' ? '备份文件已下载。请在Gmail中附加文件发送。' : 'Backup file downloaded. Please attach and send via Gmail.',
+  };
+
   const handleSave = () => {
     saveAutoBackupSettings(settings);
-    setMessage({ type: 'success', text: '自動バックアップ設定を保存しました' });
+    setMessage({ type: 'success', text: labels.savedSuccess });
     setTimeout(() => setMessage(null), 3000);
   };
 
   const handleSendNow = async () => {
     if (!settings.email) {
-      setMessage({ type: 'error', text: 'メールアドレスを入力してください' });
+      setMessage({ type: 'error', text: labels.enterEmail });
       return;
     }
 
@@ -196,7 +241,7 @@ const AutoBackupSection = () => {
 
   const handleSendViaGmail = () => {
     if (!settings.email) {
-      setMessage({ type: 'error', text: 'メールアドレスを入力してください' });
+      setMessage({ type: 'error', text: labels.enterEmail });
       return;
     }
 
@@ -221,15 +266,15 @@ const AutoBackupSection = () => {
       setSettings(updated);
       saveAutoBackupSettings(updated);
 
-      setMessage({ type: 'info', text: 'バックアップファイルをダウンロードしました。Gmailでファイルを添付して送信してください。' });
+      setMessage({ type: 'info', text: labels.downloadedInfo });
     }, 500);
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">自動バックアップ</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.title}</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        毎月自動でバックアップを取得し、Gmailに送信します
+        {labels.subtitle}
       </p>
 
       <div className="space-y-4">
@@ -242,26 +287,26 @@ const AutoBackupSection = () => {
             onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
           />
           <div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">月次自動バックアップを有効にする</span>
-            <p className="text-xs text-gray-500 dark:text-gray-400">アプリ起動時に前回から1ヶ月経過していれば自動でバックアップを送信</p>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{labels.enableMonthly}</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{labels.enableDescription}</p>
           </div>
         </label>
 
         {/* メールアドレス */}
         <Input
-          label="送信先メールアドレス"
+          label={labels.emailAddress}
           type="email"
           value={settings.email}
           onChange={(e) => setSettings({ ...settings, email: e.target.value })}
           placeholder="example@gmail.com"
-          helperText="バックアップファイルの送信先"
+          helperText={labels.emailHelper}
         />
 
         {/* 最終バックアップ日時 */}
         {settings.lastBackupDate && (
           <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              最終バックアップ: {new Date(settings.lastBackupDate).toLocaleString('ja-JP')}
+              {labels.lastBackup}: {new Date(settings.lastBackupDate).toLocaleString(language === 'ja' ? 'ja-JP' : language === 'zh' ? 'zh-CN' : 'en-US')}
             </p>
           </div>
         )}
@@ -281,23 +326,23 @@ const AutoBackupSection = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            詳細設定（EmailJS）
+            {labels.advancedSettings}
           </button>
 
           {showAdvanced && (
             <div className="mt-4 space-y-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-                  <strong>EmailJS を使用すると完全自動でメール送信できます</strong>
+                  <strong>{labels.emailjsInfo}</strong>
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400">
-                  1. <a href="https://www.emailjs.com/" target="_blank" rel="noopener noreferrer" className="underline">EmailJS</a> で無料アカウントを作成
+                  1. <a href="https://www.emailjs.com/" target="_blank" rel="noopener noreferrer" className="underline">EmailJS</a> {labels.emailjsSteps[0]}
                   <br />
-                  2. Gmail サービスを追加
+                  2. {labels.emailjsSteps[1]}
                   <br />
-                  3. テンプレートを作成（変数: to_email, backup_date, backup_data）
+                  3. {labels.emailjsSteps[2]}
                   <br />
-                  4. 以下にIDを入力
+                  4. {labels.emailjsSteps[3]}
                 </p>
               </div>
 
@@ -337,7 +382,7 @@ const AutoBackupSection = () => {
         {/* ボタン */}
         <div className="flex flex-wrap gap-3">
           <Button onClick={handleSave}>
-            設定を保存
+            {labels.saveSettings}
           </Button>
           <Button variant="secondary" onClick={handleSendNow} disabled={isSending || !settings.email}>
             {isSending ? (
@@ -346,14 +391,14 @@ const AutoBackupSection = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                送信中...
+                {labels.sending}
               </>
             ) : (
               <>
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                今すぐバックアップを送信
+                {labels.sendNow}
               </>
             )}
           </Button>
@@ -365,10 +410,29 @@ const AutoBackupSection = () => {
 
 // Data Management Section Component
 const DataManagementSection = () => {
+  const { t, language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [backupPreview, setBackupPreview] = useState<BackupData | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  const labels = {
+    title: language === 'ja' ? 'データ管理' : language === 'zh' ? '数据管理' : 'Data Management',
+    dataInfo: language === 'ja' ? 'データについて' : language === 'zh' ? '关于数据' : 'About Data',
+    createBackup: language === 'ja' ? 'バックアップを作成' : language === 'zh' ? '创建备份' : 'Create Backup',
+    restoreBackup: language === 'ja' ? 'バックアップから復元' : language === 'zh' ? '从备份恢复' : 'Restore from Backup',
+    backupContents: language === 'ja' ? 'バックアップの内容' : language === 'zh' ? '备份内容' : 'Backup Contents',
+    customers: language === 'ja' ? '顧客' : language === 'zh' ? '客户' : 'Customers',
+    documents: language === 'ja' ? '書類' : language === 'zh' ? '文档' : 'Documents',
+    products: language === 'ja' ? '商品' : language === 'zh' ? '商品' : 'Products',
+    expenseReports: language === 'ja' ? '経費レポート' : language === 'zh' ? '费用报告' : 'Expense Reports',
+    createdAt: language === 'ja' ? '作成日時' : language === 'zh' ? '创建时间' : 'Created At',
+    restoreWarning: language === 'ja' ? '復元すると現在のデータは上書きされます。この操作は取り消せません。' : language === 'zh' ? '恢复将覆盖当前数据。此操作无法撤销。' : 'Restoring will overwrite current data. This cannot be undone.',
+    restoreThis: language === 'ja' ? 'このバックアップを復元' : language === 'zh' ? '恢复此备份' : 'Restore This Backup',
+    restoring: language === 'ja' ? '復元中...' : language === 'zh' ? '恢复中...' : 'Restoring...',
+    readError: language === 'ja' ? 'ファイルの読み込みに失敗しました' : language === 'zh' ? '读取文件失败' : 'Failed to read file',
+    restoreError: language === 'ja' ? '復元に失敗しました' : language === 'zh' ? '恢复失败' : 'Restore failed',
+  };
 
   const handleExport = () => {
     downloadBackup();
@@ -383,7 +447,7 @@ const DataManagementSection = () => {
       const backup = await readBackupFile(file);
       setBackupPreview(backup);
     } catch (error) {
-      setRestoreError(error instanceof Error ? error.message : 'ファイルの読み込みに失敗しました');
+      setRestoreError(error instanceof Error ? error.message : labels.readError);
     }
 
     // Reset file input
@@ -400,7 +464,7 @@ const DataManagementSection = () => {
       restoreBackup(backupPreview);
       window.location.reload();
     } catch {
-      setRestoreError('復元に失敗しました');
+      setRestoreError(labels.restoreError);
       setIsRestoring(false);
     }
   };
@@ -409,14 +473,12 @@ const DataManagementSection = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">データ管理</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.title}</h2>
       <div className="space-y-4">
         <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-          <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">データについて</h3>
+          <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">{labels.dataInfo}</h3>
           <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            すべてのデータはブラウザのローカルストレージに保存されています。
-            ブラウザのデータを削除するとデータが失われる可能性があります。
-            定期的にバックアップを取ることをお勧めします。
+            {t('settings.dataWarning')}
           </p>
         </div>
 
@@ -426,7 +488,7 @@ const DataManagementSection = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            バックアップを作成
+            {labels.createBackup}
           </Button>
           <Button
             variant="secondary"
@@ -435,7 +497,7 @@ const DataManagementSection = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
-            バックアップから復元
+            {labels.restoreBackup}
           </Button>
           <input
             ref={fileInputRef}
@@ -456,39 +518,39 @@ const DataManagementSection = () => {
         {/* Backup Preview */}
         {backupPreview && stats && (
           <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">バックアップの内容</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">{labels.backupContents}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.customers}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">顧客</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{labels.customers}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.documents}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">書類</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{labels.documents}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.products}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">商品</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{labels.products}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.expenseReports}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">経費レポート</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{labels.expenseReports}</p>
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              作成日時: {new Date(stats.exportedAt).toLocaleString('ja-JP')}
+              {labels.createdAt}: {new Date(stats.exportedAt).toLocaleString(language === 'ja' ? 'ja-JP' : language === 'zh' ? 'zh-CN' : 'en-US')}
             </p>
             <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg mb-4">
               <p className="text-sm text-orange-700 dark:text-orange-300">
-                復元すると現在のデータは上書きされます。この操作は取り消せません。
+                {labels.restoreWarning}
               </p>
             </div>
             <div className="flex gap-3">
               <Button onClick={handleRestore} disabled={isRestoring}>
-                {isRestoring ? '復元中...' : 'このバックアップを復元'}
+                {isRestoring ? labels.restoring : labels.restoreThis}
               </Button>
               <Button variant="secondary" onClick={() => setBackupPreview(null)}>
-                キャンセル
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
@@ -504,6 +566,16 @@ const AppSettingsSection = () => {
   const { language, setLanguage } = useLanguage();
   const [isManualOpen, setIsManualOpen] = useState(false);
 
+  const labels = {
+    title: language === 'ja' ? 'アプリ設定' : language === 'zh' ? '应用设置' : 'App Settings',
+    languageLabel: language === 'ja' ? '言語 / Language' : language === 'zh' ? '语言 / Language' : 'Language',
+    displayMode: language === 'ja' ? '表示モード' : language === 'zh' ? '显示模式' : 'Display Mode',
+    darkMode: language === 'ja' ? 'ダークモード' : language === 'zh' ? '深色模式' : 'Dark Mode',
+    lightMode: language === 'ja' ? 'ライトモード' : language === 'zh' ? '浅色模式' : 'Light Mode',
+    help: language === 'ja' ? 'ヘルプ' : language === 'zh' ? '帮助' : 'Help',
+    openManual: language === 'ja' ? '操作マニュアルを開く' : language === 'zh' ? '打开操作手册' : 'Open User Manual',
+  };
+
   const languages: { value: Language; label: string }[] = [
     { value: 'ja', label: '日本語' },
     { value: 'zh', label: '中文' },
@@ -513,7 +585,7 @@ const AppSettingsSection = () => {
   return (
     <>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">アプリ設定</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.title}</h2>
         <div className="space-y-6">
           {/* Language */}
           <div>
@@ -522,7 +594,7 @@ const AppSettingsSection = () => {
                 <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                 </svg>
-                言語 / Language
+                {labels.languageLabel}
               </div>
             </label>
             <div className="flex flex-wrap gap-2">
@@ -555,7 +627,7 @@ const AppSettingsSection = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 )}
-                表示モード
+                {labels.displayMode}
               </div>
             </label>
             <button
@@ -563,7 +635,7 @@ const AppSettingsSection = () => {
               className="flex items-center justify-between w-full max-w-xs px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                {isDarkMode ? 'ダークモード' : 'ライトモード'}
+                {isDarkMode ? labels.darkMode : labels.lightMode}
               </span>
               <div className={`w-12 h-7 rounded-full p-1 transition-colors ${isDarkMode ? 'bg-blue-500' : 'bg-gray-300'}`}>
                 <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-5' : ''}`} />
@@ -578,14 +650,14 @@ const AppSettingsSection = () => {
                 <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                ヘルプ
+                {labels.help}
               </div>
             </label>
             <Button variant="secondary" onClick={() => setIsManualOpen(true)}>
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              操作マニュアルを開く
+              {labels.openManual}
             </Button>
           </div>
         </div>
@@ -598,6 +670,7 @@ const AppSettingsSection = () => {
 export function Settings() {
   const { settings, updateSettings, addStamp, updateStamp, deleteStamp, templates, deleteTemplate } = useApp();
   const { documentTheme, setDocumentTheme } = useTheme();
+  const { t, language } = useLanguage();
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(settings.companyInfo);
   const [defaultTaxRate, setDefaultTaxRate] = useState(settings.defaultTaxRate);
   const [prefixes, setPrefixes] = useState(settings.documentNumberPrefix);
@@ -616,6 +689,87 @@ export function Settings() {
     showDate: true,
   });
 
+  // Labels
+  const labels = {
+    title: t('settings.title'),
+    subtitle: language === 'ja' ? '会社情報や書類の設定を管理します' : language === 'zh' ? '管理公司信息和文档设置' : 'Manage company information and document settings',
+    companyInfo: t('settings.companyInfo'),
+    companyInfoDesc: language === 'ja' ? '書類に表示される自社の情報を設定します' : language === 'zh' ? '设置显示在文档上的公司信息' : 'Set company information displayed on documents',
+    companyLogo: language === 'ja' ? '会社ロゴ' : language === 'zh' ? '公司logo' : 'Company Logo',
+    selectLogo: language === 'ja' ? 'ロゴを選択' : language === 'zh' ? '选择logo' : 'Select Logo',
+    logoSize: language === 'ja' ? '500KB以下のPNG/JPG' : language === 'zh' ? '500KB以下的PNG/JPG' : 'PNG/JPG under 500KB',
+    logoError: language === 'ja' ? 'ロゴファイルは500KB以下にしてください' : language === 'zh' ? 'logo文件请保持在500KB以下' : 'Logo file must be under 500KB',
+    companyName: language === 'ja' ? '会社名 / 屋号' : language === 'zh' ? '公司名称' : 'Company Name',
+    companyNamePlaceholder: language === 'ja' ? '株式会社サンプル' : language === 'zh' ? '示例有限公司' : 'Sample Inc.',
+    bankInfo: t('settings.bankInfo'),
+    bankInfoDesc: language === 'ja' ? '請求書に表示される振込先を設定します' : language === 'zh' ? '设置显示在发票上的银行信息' : 'Set bank information displayed on invoices',
+    documentSettings: language === 'ja' ? '書類設定' : language === 'zh' ? '文档设置' : 'Document Settings',
+    defaultTaxRate: t('settings.defaultTaxRate'),
+    standardRate: language === 'ja' ? '標準税率' : language === 'zh' ? '标准税率' : 'Standard Rate',
+    reducedRate: language === 'ja' ? '軽減税率' : language === 'zh' ? '减税率' : 'Reduced Rate',
+    taxFree: language === 'ja' ? '非課税' : language === 'zh' ? '免税' : 'Tax Free',
+    quotationPrefix: language === 'ja' ? '見積書番号プレフィックス' : language === 'zh' ? '报价单编号前缀' : 'Quotation No. Prefix',
+    invoicePrefix: language === 'ja' ? '請求書番号プレフィックス' : language === 'zh' ? '发票编号前缀' : 'Invoice No. Prefix',
+    receiptPrefix: language === 'ja' ? '領収書番号プレフィックス' : language === 'zh' ? '收据编号前缀' : 'Receipt No. Prefix',
+    yearPrefix: language === 'ja' ? '書類番号に年度プレフィックスを付ける' : language === 'zh' ? '文档编号添加年份前缀' : 'Add year prefix to document numbers',
+    yearFormat: language === 'ja' ? '年度形式' : language === 'zh' ? '年份格式' : 'Year Format',
+    yearFull: language === 'ja' ? '4桁 (例: 2026)' : language === 'zh' ? '4位 (例: 2026)' : '4 digits (e.g. 2026)',
+    yearShort: language === 'ja' ? '2桁 (例: 26)' : language === 'zh' ? '2位 (例: 26)' : '2 digits (e.g. 26)',
+    nextNumbers: language === 'ja' ? '次の書類番号' : language === 'zh' ? '下一个文档编号' : 'Next document numbers',
+    documentDesign: language === 'ja' ? '書類デザイン' : language === 'zh' ? '文档设计' : 'Document Design',
+    documentDesignDesc: language === 'ja' ? '書類のカラーテーマ、フォント、レイアウトをカスタマイズします' : language === 'zh' ? '自定义文档的配色、字体和布局' : 'Customize document color theme, fonts, and layout',
+    colorTheme: language === 'ja' ? 'カラーテーマ' : language === 'zh' ? '配色主题' : 'Color Theme',
+    custom: language === 'ja' ? 'カスタム' : language === 'zh' ? '自定义' : 'Custom',
+    font: language === 'ja' ? 'フォント' : language === 'zh' ? '字体' : 'Font',
+    logoPosition: language === 'ja' ? 'ロゴ位置' : language === 'zh' ? 'logo位置' : 'Logo Position',
+    left: language === 'ja' ? '左側' : language === 'zh' ? '左侧' : 'Left',
+    right: language === 'ja' ? '右側' : language === 'zh' ? '右侧' : 'Right',
+    preview: t('common.preview'),
+    stamps: t('settings.stamps'),
+    stampsDesc: language === 'ja' ? '書類に押印する電子印を作成・管理します' : language === 'zh' ? '创建和管理文档上的电子印章' : 'Create and manage electronic stamps for documents',
+    registeredStamps: language === 'ja' ? '登録済みの電子印' : language === 'zh' ? '已注册的电子印章' : 'Registered Stamps',
+    editStamp: language === 'ja' ? '電子印を編集' : language === 'zh' ? '编辑电子印章' : 'Edit Stamp',
+    createStamp: language === 'ja' ? '新しい電子印を作成' : language === 'zh' ? '创建新电子印章' : 'Create New Stamp',
+    stampName: language === 'ja' ? '印鑑名（管理用）' : language === 'zh' ? '印章名称（管理用）' : 'Stamp Name (for management)',
+    stampNamePlaceholder: language === 'ja' ? '例：承認印' : language === 'zh' ? '例：审批章' : 'e.g. Approval',
+    displayText: language === 'ja' ? '表示テキスト' : language === 'zh' ? '显示文字' : 'Display Text',
+    displayTextPlaceholder: language === 'ja' ? '例：田中' : language === 'zh' ? '例：田中' : 'e.g. Tanaka',
+    displayTextHelper: language === 'ja' ? '印鑑に表示される文字（1〜3文字推奨）' : language === 'zh' ? '显示在印章上的文字（建议1-3个字符）' : 'Text displayed on stamp (1-3 characters recommended)',
+    shape: language === 'ja' ? '形状' : language === 'zh' ? '形状' : 'Shape',
+    circle: language === 'ja' ? '丸型' : language === 'zh' ? '圆形' : 'Circle',
+    square: language === 'ja' ? '角型' : language === 'zh' ? '方形' : 'Square',
+    color: language === 'ja' ? '色' : language === 'zh' ? '颜色' : 'Color',
+    size: language === 'ja' ? 'サイズ' : language === 'zh' ? '大小' : 'Size',
+    showDate: language === 'ja' ? '日付を表示する' : language === 'zh' ? '显示日期' : 'Show Date',
+    addStamp: language === 'ja' ? '電子印を追加' : language === 'zh' ? '添加电子印章' : 'Add Stamp',
+    enterNameAndText: language === 'ja' ? '印鑑名と表示テキストを入力してください' : language === 'zh' ? '请输入印章名称和显示文字' : 'Please enter stamp name and display text',
+    templates: t('settings.templates'),
+    templatesDesc: language === 'ja' ? 'よく使う明細セットをテンプレートとして保存・管理します' : language === 'zh' ? '将常用明细集保存为模板进行管理' : 'Save and manage frequently used item sets as templates',
+    noTemplates: language === 'ja' ? 'テンプレートがありません。書類作成画面から「テンプレートとして保存」で登録できます。' : language === 'zh' ? '没有模板。可以从文档创建页面"保存为模板"来注册。' : 'No templates. Register via "Save as Template" from document creation.',
+    deleteTemplateConfirm: language === 'ja' ? 'を削除しますか？' : language === 'zh' ? '确定要删除吗？' : 'Delete this?',
+    items: language === 'ja' ? '件の明細' : language === 'zh' ? '条明细' : ' items',
+    saved: language === 'ja' ? '保存しました' : language === 'zh' ? '已保存' : 'Saved',
+    reset: language === 'ja' ? 'リセット' : language === 'zh' ? '重置' : 'Reset',
+  };
+
+  // Color presets with localized names
+  const colorPresets = [
+    { color: '#000000', name: language === 'ja' ? 'ブラック' : language === 'zh' ? '黑色' : 'Black' },
+    { color: '#1e40af', name: language === 'ja' ? 'ブルー' : language === 'zh' ? '蓝色' : 'Blue' },
+    { color: '#047857', name: language === 'ja' ? 'グリーン' : language === 'zh' ? '绿色' : 'Green' },
+    { color: '#b91c1c', name: language === 'ja' ? 'レッド' : language === 'zh' ? '红色' : 'Red' },
+    { color: '#7c3aed', name: language === 'ja' ? 'パープル' : language === 'zh' ? '紫色' : 'Purple' },
+    { color: '#c2410c', name: language === 'ja' ? 'オレンジ' : language === 'zh' ? '橙色' : 'Orange' },
+  ];
+
+  // Font presets with localized names
+  const fontPresets = [
+    { value: 'default', name: language === 'ja' ? 'デフォルト' : language === 'zh' ? '默认' : 'Default', sample: 'あいうえお ABC 123' },
+    { value: 'gothic', name: language === 'ja' ? 'ゴシック体' : language === 'zh' ? '黑体' : 'Gothic', sample: 'あいうえお ABC 123' },
+    { value: 'mincho', name: language === 'ja' ? '明朝体' : language === 'zh' ? '明朝体' : 'Mincho', sample: 'あいうえお ABC 123' },
+    { value: 'maru', name: language === 'ja' ? '丸ゴシック' : language === 'zh' ? '圆体' : 'Rounded', sample: 'あいうえお ABC 123' },
+  ];
+
   // Sync form state with settings when settings change
   useEffect(() => {
     setCompanyInfo(settings.companyInfo);
@@ -631,7 +785,7 @@ export function Settings() {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      alert('ロゴファイルは500KB以下にしてください');
+      alert(labels.logoError);
       return;
     }
 
@@ -665,8 +819,8 @@ export function Settings() {
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">設定</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">会社情報や書類の設定を管理します</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{labels.title}</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">{labels.subtitle}</p>
       </div>
 
       {/* App Settings (Language, Theme, Manual) */}
@@ -674,12 +828,12 @@ export function Settings() {
 
       {/* Company Info */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">会社情報</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">書類に表示される自社の情報を設定します</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.companyInfo}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.companyInfoDesc}</p>
         <div className="space-y-4">
           {/* Logo Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">会社ロゴ</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{labels.companyLogo}</label>
             <div className="flex items-center gap-4">
               {companyInfo.logoUrl ? (
                 <div className="relative">
@@ -708,7 +862,7 @@ export function Settings() {
               <div>
                 <label className="cursor-pointer">
                   <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-block">
-                    ロゴを選択
+                    {labels.selectLogo}
                   </span>
                   <input
                     type="file"
@@ -717,42 +871,42 @@ export function Settings() {
                     className="hidden"
                   />
                 </label>
-                <p className="text-xs text-gray-500 mt-1">500KB以下のPNG/JPG</p>
+                <p className="text-xs text-gray-500 mt-1">{labels.logoSize}</p>
               </div>
             </div>
           </div>
           <Input
-            label="会社名 / 屋号"
+            label={labels.companyName}
             value={companyInfo.name}
             onChange={(e) => setCompanyInfo({ ...companyInfo, name: e.target.value })}
-            placeholder="株式会社サンプル"
+            placeholder={labels.companyNamePlaceholder}
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
-              label="郵便番号"
+              label={t('settings.postalCode')}
               value={companyInfo.postalCode || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, postalCode: e.target.value })}
               placeholder="123-4567"
             />
             <div className="md:col-span-2">
               <Input
-                label="住所"
+                label={t('settings.address')}
                 value={companyInfo.address || ''}
                 onChange={(e) => setCompanyInfo({ ...companyInfo, address: e.target.value })}
-                placeholder="東京都千代田区..."
+                placeholder={language === 'ja' ? '東京都千代田区...' : language === 'zh' ? '东京都千代田区...' : 'Tokyo, Chiyoda-ku...'}
               />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="電話番号"
+              label={t('settings.phone')}
               type="tel"
               value={companyInfo.phone || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, phone: e.target.value })}
               placeholder="03-1234-5678"
             />
             <Input
-              label="メールアドレス"
+              label={t('settings.email')}
               type="email"
               value={companyInfo.email || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
@@ -760,55 +914,55 @@ export function Settings() {
             />
           </div>
           <Input
-            label="インボイス登録番号"
+            label={t('settings.registrationNumber')}
             value={companyInfo.registrationNumber || ''}
             onChange={(e) => setCompanyInfo({ ...companyInfo, registrationNumber: e.target.value })}
             placeholder="T1234567890123"
-            helperText="適格請求書発行事業者の登録番号"
+            helperText={language === 'ja' ? '適格請求書発行事業者の登録番号' : language === 'zh' ? '合格发票开具企业的注册号' : 'Qualified invoice issuer registration number'}
           />
         </div>
       </div>
 
       {/* Bank Info */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">振込先情報</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">請求書に表示される振込先を設定します</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.bankInfo}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.bankInfoDesc}</p>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="銀行名"
+              label={t('settings.bankName')}
               value={companyInfo.bankName || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, bankName: e.target.value })}
-              placeholder="サンプル銀行"
+              placeholder={language === 'ja' ? 'サンプル銀行' : language === 'zh' ? '示例银行' : 'Sample Bank'}
             />
             <Input
-              label="支店名"
+              label={t('settings.branchName')}
               value={companyInfo.bankBranch || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, bankBranch: e.target.value })}
-              placeholder="東京支店"
+              placeholder={language === 'ja' ? '東京支店' : language === 'zh' ? '东京分行' : 'Tokyo Branch'}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
-              label="口座種別"
+              label={t('settings.accountType')}
               options={[
-                { value: '普通', label: '普通' },
-                { value: '当座', label: '当座' },
+                { value: '普通', label: t('accountTypes.savings') },
+                { value: '当座', label: t('accountTypes.checking') },
               ]}
               value={companyInfo.accountType || '普通'}
               onChange={(val) => setCompanyInfo({ ...companyInfo, accountType: val })}
             />
             <Input
-              label="口座番号"
+              label={t('settings.accountNumber')}
               value={companyInfo.accountNumber || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, accountNumber: e.target.value })}
               placeholder="1234567"
             />
             <Input
-              label="口座名義"
+              label={t('settings.accountHolder')}
               value={companyInfo.accountName || ''}
               onChange={(e) => setCompanyInfo({ ...companyInfo, accountName: e.target.value })}
-              placeholder="カ）サンプル"
+              placeholder={language === 'ja' ? 'カ）サンプル' : language === 'zh' ? '示例有限公司' : 'Sample Inc.'}
             />
           </div>
         </div>
@@ -816,33 +970,33 @@ export function Settings() {
 
       {/* Document Settings */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">書類設定</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.documentSettings}</h2>
         <div className="space-y-4">
           <Select
-            label="デフォルト消費税率"
+            label={labels.defaultTaxRate}
             options={[
-              { value: '10', label: '10%（標準税率）' },
-              { value: '8', label: '8%（軽減税率）' },
-              { value: '0', label: '0%（非課税）' },
+              { value: '10', label: `10%（${labels.standardRate}）` },
+              { value: '8', label: `8%（${labels.reducedRate}）` },
+              { value: '0', label: `0%（${labels.taxFree}）` },
             ]}
             value={defaultTaxRate.toString()}
             onChange={(val) => setDefaultTaxRate(parseInt(val))}
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
-              label="見積書番号プレフィックス"
+              label={labels.quotationPrefix}
               value={prefixes.quotation}
               onChange={(e) => setPrefixes({ ...prefixes, quotation: e.target.value })}
               placeholder="Q"
             />
             <Input
-              label="請求書番号プレフィックス"
+              label={labels.invoicePrefix}
               value={prefixes.invoice}
               onChange={(e) => setPrefixes({ ...prefixes, invoice: e.target.value })}
               placeholder="INV"
             />
             <Input
-              label="領収書番号プレフィックス"
+              label={labels.receiptPrefix}
               value={prefixes.receipt}
               onChange={(e) => setPrefixes({ ...prefixes, receipt: e.target.value })}
               placeholder="R"
@@ -857,15 +1011,15 @@ export function Settings() {
                 checked={useYearPrefix}
                 onChange={(e) => setUseYearPrefix(e.target.checked)}
               />
-              書類番号に年度プレフィックスを付ける
+              {labels.yearPrefix}
             </label>
             {useYearPrefix && (
               <div className="ml-6">
                 <Select
-                  label="年度形式"
+                  label={labels.yearFormat}
                   options={[
-                    { value: 'full', label: '4桁 (例: 2026)' },
-                    { value: 'short', label: '2桁 (例: 26)' },
+                    { value: 'full', label: labels.yearFull },
+                    { value: 'short', label: labels.yearShort },
                   ]}
                   value={yearPrefixFormat}
                   onChange={(val) => setYearPrefixFormat(val as 'full' | 'short')}
@@ -874,31 +1028,24 @@ export function Settings() {
             )}
           </div>
           <p className="text-sm text-gray-500">
-            次の書類番号: 見積書 {prefixes.quotation}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.quotation).padStart(5, '0')} /
-            請求書 {prefixes.invoice}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.invoice).padStart(5, '0')} /
-            領収書 {prefixes.receipt}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.receipt).padStart(5, '0')}
+            {labels.nextNumbers}: {t('documents.quotation')} {prefixes.quotation}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.quotation).padStart(5, '0')} /
+            {t('documents.invoice')} {prefixes.invoice}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.invoice).padStart(5, '0')} /
+            {t('documents.receipt')} {prefixes.receipt}{useYearPrefix ? `-${yearPrefixFormat === 'short' ? new Date().getFullYear().toString().slice(2) : new Date().getFullYear()}` : ''}-{String(settings.nextNumbers.receipt).padStart(5, '0')}
           </p>
         </div>
       </div>
 
       {/* Document Design Customization */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 dark:bg-gray-800 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">書類デザイン</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">書類のカラーテーマ、フォント、レイアウトをカスタマイズします</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.documentDesign}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.documentDesignDesc}</p>
 
         <div className="space-y-6">
           {/* Primary Color */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">カラーテーマ</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{labels.colorTheme}</label>
             <div className="flex flex-wrap gap-3 mb-3">
-              {[
-                { color: '#000000', name: 'ブラック' },
-                { color: '#1e40af', name: 'ブルー' },
-                { color: '#047857', name: 'グリーン' },
-                { color: '#b91c1c', name: 'レッド' },
-                { color: '#7c3aed', name: 'パープル' },
-                { color: '#c2410c', name: 'オレンジ' },
-              ].map((preset) => (
+              {colorPresets.map((preset) => (
                 <button
                   key={preset.color}
                   type="button"
@@ -918,7 +1065,7 @@ export function Settings() {
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 dark:text-gray-400">カスタム:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{labels.custom}:</span>
               <input
                 type="color"
                 value={documentTheme.primaryColor}
@@ -931,14 +1078,9 @@ export function Settings() {
 
           {/* Font Family */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">フォント</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{labels.font}</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { value: 'default', name: 'デフォルト', sample: 'あいうえお ABC 123' },
-                { value: 'gothic', name: 'ゴシック体', sample: 'あいうえお ABC 123' },
-                { value: 'mincho', name: '明朝体', sample: 'あいうえお ABC 123' },
-                { value: 'maru', name: '丸ゴシック', sample: 'あいうえお ABC 123' },
-              ].map((font) => (
+              {fontPresets.map((font) => (
                 <button
                   key={font.value}
                   type="button"
@@ -972,7 +1114,7 @@ export function Settings() {
 
           {/* Logo Position */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ロゴ位置</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{labels.logoPosition}</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -983,7 +1125,7 @@ export function Settings() {
                   onChange={() => setDocumentTheme({ ...documentTheme, logoPosition: 'left' })}
                   className="w-4 h-4 text-blue-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">左側</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{labels.left}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -994,14 +1136,14 @@ export function Settings() {
                   onChange={() => setDocumentTheme({ ...documentTheme, logoPosition: 'right' })}
                   className="w-4 h-4 text-blue-600"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">右側</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{labels.right}</span>
               </label>
             </div>
           </div>
 
           {/* Preview */}
           <div className="border-t pt-4 dark:border-gray-600">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">プレビュー</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{labels.preview}</p>
             <div className="bg-white border rounded-lg p-4 max-w-md">
               <div className={`flex ${documentTheme.logoPosition === 'right' ? 'flex-row-reverse' : ''} items-start justify-between mb-4`}>
                 <div
@@ -1025,7 +1167,7 @@ export function Settings() {
                           : 'inherit',
                     }}
                   >
-                    請求書
+                    {t('documents.invoice')}
                   </p>
                   <p className="text-xs text-gray-500">No. INV-00001</p>
                 </div>
@@ -1047,7 +1189,7 @@ export function Settings() {
                         : 'inherit',
                   }}
                 >
-                  株式会社サンプル 御中
+                  {language === 'ja' ? '株式会社サンプル 御中' : language === 'zh' ? '示例有限公司' : 'Sample Inc.'}
                 </p>
               </div>
             </div>
@@ -1057,13 +1199,13 @@ export function Settings() {
 
       {/* Electronic Stamps */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">電子印</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">書類に押印する電子印を作成・管理します</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.stamps}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.stampsDesc}</p>
 
         {/* Existing Stamps */}
         {(settings.stamps || []).length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">登録済みの電子印</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">{labels.registeredStamps}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(settings.stamps || []).map((stamp) => (
                 <div key={stamp.id} className="border rounded-lg p-3 text-center">
@@ -1077,19 +1219,19 @@ export function Settings() {
                       className="text-xs text-blue-600 hover:text-blue-800"
                       onClick={() => setEditingStamp(stamp)}
                     >
-                      編集
+                      {t('common.edit')}
                     </button>
                     <span className="text-gray-300">|</span>
                     <button
                       type="button"
                       className="text-xs text-red-600 hover:text-red-800"
                       onClick={() => {
-                        if (confirm('この電子印を削除しますか？')) {
+                        if (confirm(`${stamp.name} ${labels.deleteTemplateConfirm}`)) {
                           deleteStamp(stamp.id);
                         }
                       }}
                     >
-                      削除
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
@@ -1101,12 +1243,12 @@ export function Settings() {
         {/* Stamp Editor Form */}
         <div className="border-t pt-4">
           <h3 className="text-sm font-medium text-gray-700 mb-3">
-            {editingStamp ? '電子印を編集' : '新しい電子印を作成'}
+            {editingStamp ? labels.editStamp : labels.createStamp}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-4">
               <Input
-                label="印鑑名（管理用）"
+                label={labels.stampName}
                 value={editingStamp ? editingStamp.name || '' : newStamp.name}
                 onChange={(e) => {
                   if (editingStamp) {
@@ -1115,10 +1257,10 @@ export function Settings() {
                     setNewStamp({ ...newStamp, name: e.target.value });
                   }
                 }}
-                placeholder="例：承認印"
+                placeholder={labels.stampNamePlaceholder}
               />
               <Input
-                label="表示テキスト"
+                label={labels.displayText}
                 value={editingStamp ? editingStamp.text || '' : newStamp.text}
                 onChange={(e) => {
                   if (editingStamp) {
@@ -1127,15 +1269,15 @@ export function Settings() {
                     setNewStamp({ ...newStamp, text: e.target.value });
                   }
                 }}
-                placeholder="例：田中"
-                helperText="印鑑に表示される文字（1〜3文字推奨）"
+                placeholder={labels.displayTextPlaceholder}
+                helperText={labels.displayTextHelper}
               />
               <div className="grid grid-cols-2 gap-4">
                 <Select
-                  label="形状"
+                  label={labels.shape}
                   options={[
-                    { value: 'circle', label: '丸型' },
-                    { value: 'square', label: '角型' },
+                    { value: 'circle', label: labels.circle },
+                    { value: 'square', label: labels.square },
                   ]}
                   value={editingStamp ? editingStamp.shape || 'circle' : newStamp.shape}
                   onChange={(val) => {
@@ -1147,7 +1289,7 @@ export function Settings() {
                   }}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">色</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{labels.color}</label>
                   <input
                     type="color"
                     className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
@@ -1164,7 +1306,7 @@ export function Settings() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  サイズ: {editingStamp ? editingStamp.size || 50 : newStamp.size}px
+                  {labels.size}: {editingStamp ? editingStamp.size || 50 : newStamp.size}px
                 </label>
                 <input
                   type="range"
@@ -1195,11 +1337,11 @@ export function Settings() {
                     }
                   }}
                 />
-                日付を表示する
+                {labels.showDate}
               </label>
             </div>
             <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500 mb-3">プレビュー</p>
+              <p className="text-sm text-gray-500 mb-3">{labels.preview}</p>
               <StampPreview stamp={editingStamp ? {
                 name: editingStamp.name || '',
                 text: editingStamp.text || '',
@@ -1221,17 +1363,17 @@ export function Settings() {
                     setEditingStamp(null);
                   }}
                 >
-                  更新
+                  {t('common.save')}
                 </Button>
                 <Button variant="secondary" onClick={() => setEditingStamp(null)}>
-                  キャンセル
+                  {t('common.cancel')}
                 </Button>
               </>
             ) : (
               <Button
                 onClick={() => {
                   if (!newStamp.name || !newStamp.text) {
-                    alert('印鑑名と表示テキストを入力してください');
+                    alert(labels.enterNameAndText);
                     return;
                   }
                   addStamp(newStamp);
@@ -1245,7 +1387,7 @@ export function Settings() {
                   });
                 }}
               >
-                電子印を追加
+                {labels.addStamp}
               </Button>
             )}
           </div>
@@ -1254,12 +1396,12 @@ export function Settings() {
 
       {/* Templates Management */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 md:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">書類テンプレート</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">よく使う明細セットをテンプレートとして保存・管理します</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{labels.templates}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{labels.templatesDesc}</p>
 
         {templates.length === 0 ? (
           <p className="text-gray-500 text-center py-4">
-            テンプレートがありません。書類作成画面から「テンプレートとして保存」で登録できます。
+            {labels.noTemplates}
           </p>
         ) : (
           <div className="space-y-3">
@@ -1268,14 +1410,14 @@ export function Settings() {
                 <div>
                   <p className="font-medium text-gray-900">{template.name}</p>
                   <p className="text-sm text-gray-500">
-                    {template.type === 'quotation' ? '見積書' : template.type === 'invoice' ? '請求書' : '領収書'}
-                    ・{template.items.length}件の明細
+                    {template.type === 'quotation' ? t('documents.quotation') : template.type === 'invoice' ? t('documents.invoice') : t('documents.receipt')}
+                    {' '}{template.items.length}{labels.items}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(`「${template.name}」を削除しますか？`)) {
+                    if (confirm(`「${template.name}」${labels.deleteTemplateConfirm}`)) {
                       deleteTemplate(template.id);
                     }
                   }}
@@ -1312,14 +1454,14 @@ export function Settings() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            保存しました
+            {labels.saved}
           </span>
         )}
         <Button variant="secondary" onClick={handleReset}>
-          リセット
+          {labels.reset}
         </Button>
         <Button onClick={handleSave}>
-          保存
+          {t('common.save')}
         </Button>
       </div>
     </div>

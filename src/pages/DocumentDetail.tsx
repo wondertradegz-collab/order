@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button, Modal, Input, Select, ConfirmModal, DateInput } from '../components/common';
 import { DocumentPreview } from '../components/documents/DocumentPreview';
 import {
@@ -21,6 +22,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   const {
     getDocument,
@@ -46,7 +48,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
     date.setMonth(date.getMonth() + 1);
     return date.toISOString().split('T')[0];
   });
-  const [convertPaymentMethod, setConvertPaymentMethod] = useState('銀行振込');
+  const [convertPaymentMethod, setConvertPaymentMethod] = useState(t('paymentMethods.bankTransfer'));
 
   const document = id ? getDocument(id) : undefined;
   const customer = document ? getCustomer(document.customerId) : undefined;
@@ -57,9 +59,9 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
   if (!document) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">{typeLabel}が見つかりません</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">{typeLabel} {t('common.noData')}</h2>
         <Link to={basePath} className="text-blue-600 hover:text-blue-700">
-          一覧に戻る
+          {t('common.back')}
         </Link>
       </div>
     );
@@ -122,13 +124,13 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       await html2pdf().set(opt).from(printContent).save();
     } catch (error) {
       console.error('PDF generation failed:', error);
-      alert('PDF生成に失敗しました');
+      alert(t('common.error'));
     }
   };
 
   const handleSendEmail = () => {
     if (!customer?.email) {
-      alert('顧客のメールアドレスが設定されていません');
+      alert(t('common.error'));
       return;
     }
 
@@ -136,8 +138,8 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
     const body = encodeURIComponent(
       `${customer.companyName || customer.name} 様\n\n` +
       `${typeLabel}をお送りいたします。\n\n` +
-      `書類番号: ${document.documentNumber}\n` +
-      `金額: ${formatCurrency(document.total)}\n\n` +
+      `${t('documents.documentNumber')}: ${document.documentNumber}\n` +
+      `${t('common.amount')}: ${formatCurrency(document.total)}\n\n` +
       `ご確認のほどよろしくお願いいたします。`
     );
     window.location.href = `mailto:${customer.email}?subject=${subject}&body=${body}`;
@@ -210,7 +212,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
             </span>
           </div>
           <p className="text-gray-500">
-            {customer?.companyName || customer?.name || '顧客情報なし'} | {formatDate(document.issueDate)}
+            {customer?.companyName || customer?.name || t('common.unknown')} | {formatDate(document.issueDate)}
           </p>
         </div>
 
@@ -220,39 +222,39 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            プレビュー
+            {t('common.preview')}
           </Button>
           <Button variant="secondary" onClick={handlePrint}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            印刷
+            {t('common.print')}
           </Button>
           <Button variant="primary" onClick={handleDownloadPDF}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            PDF出力
+            {t('documents.pdfExport')}
           </Button>
           <Button variant="secondary" onClick={handleSendEmail}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            メール送付
+            {t('documents.sendEmail')}
           </Button>
           <Link to={`${basePath}/${document.id}/edit`}>
             <Button variant="secondary">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              編集
+              {t('common.edit')}
             </Button>
           </Link>
           <Button variant="secondary" onClick={handleDuplicate}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            複製
+            {t('common.duplicate')}
           </Button>
         </div>
       </div>
@@ -264,16 +266,16 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
           {/* Summary */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">金額</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('common.amount')}</h2>
               <p className="text-3xl font-bold text-gray-900">{formatCurrency(document.total)}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">小計</p>
+                <p className="text-gray-500">{t('common.subtotal')}</p>
                 <p className="font-medium text-gray-900">{formatCurrency(document.subtotal)}</p>
               </div>
               <div>
-                <p className="text-gray-500">消費税</p>
+                <p className="text-gray-500">{t('common.tax')}</p>
                 <p className="font-medium text-gray-900">{formatCurrency(document.taxAmount)}</p>
               </div>
             </div>
@@ -283,11 +285,11 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">入金済み</p>
+                    <p className="text-gray-500">{t('documents.paidAmount')}</p>
                     <p className="font-medium text-green-600">{formatCurrency(invoice.paidAmount)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">残額</p>
+                    <p className="text-gray-500">{t('documents.remainingAmount')}</p>
                     <p className="font-medium text-orange-600">{formatCurrency(remainingAmount)}</p>
                   </div>
                 </div>
@@ -295,7 +297,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                 {/* Payment History */}
                 {paymentHistory.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">入金履歴</h3>
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">{t('documents.paymentHistory')}</h3>
                     <div className="space-y-2">
                       {paymentHistory.map((payment) => (
                         <div key={payment.id} className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2">
@@ -317,16 +319,16 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
 
           {/* Line Items */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">明細</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documents.lineItems')}</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="py-2 text-left text-sm font-medium text-gray-500">品名</th>
-                    <th className="py-2 text-right text-sm font-medium text-gray-500">数量</th>
-                    <th className="py-2 text-right text-sm font-medium text-gray-500">単価</th>
-                    <th className="py-2 text-right text-sm font-medium text-gray-500">税率</th>
-                    <th className="py-2 text-right text-sm font-medium text-gray-500">金額</th>
+                    <th className="py-2 text-left text-sm font-medium text-gray-500">{t('documents.itemName')}</th>
+                    <th className="py-2 text-right text-sm font-medium text-gray-500">{t('common.quantity')}</th>
+                    <th className="py-2 text-right text-sm font-medium text-gray-500">{t('common.unitPrice')}</th>
+                    <th className="py-2 text-right text-sm font-medium text-gray-500">{t('common.taxRate')}</th>
+                    <th className="py-2 text-right text-sm font-medium text-gray-500">{t('common.amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,7 +351,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
           {/* Notes */}
           {document.notes && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">備考</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('common.notes')}</h2>
               <p className="text-gray-600 whitespace-pre-wrap">{document.notes}</p>
             </div>
           )}
@@ -359,21 +361,21 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
         <div className="space-y-6">
           {/* Actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">操作</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('common.actions')}</h2>
             <div className="space-y-3">
               {/* Status Change */}
               <Select
-                label="ステータス変更"
+                label={t('common.status')}
                 options={[
-                  { value: 'draft', label: '下書き' },
-                  { value: 'sent', label: '送付済み' },
+                  { value: 'draft', label: t('status.draft') },
+                  { value: 'sent', label: t('status.sent') },
                   ...(type === 'invoice'
                     ? [
-                        { value: 'paid', label: '入金済み' },
-                        { value: 'overdue', label: '期限超過' },
+                        { value: 'paid', label: t('status.paid') },
+                        { value: 'overdue', label: t('status.overdue') },
                       ]
                     : []),
-                  { value: 'cancelled', label: 'キャンセル' },
+                  { value: 'cancelled', label: t('status.cancelled') },
                 ]}
                 value={document.status}
                 onChange={handleStatusChange}
@@ -389,7 +391,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                     setShowPaymentModal(true);
                   }}
                 >
-                  入金を記録
+                  {t('documents.recordPayment')}
                 </Button>
               )}
 
@@ -400,7 +402,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                   className="w-full"
                   onClick={() => setShowConvertModal(true)}
                 >
-                  請求書に変換
+                  {t('documents.convertToInvoice')}
                 </Button>
               )}
 
@@ -410,7 +412,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                   className="w-full"
                   onClick={() => setShowConvertModal(true)}
                 >
-                  領収書を発行
+                  {t('documents.issueReceipt')}
                 </Button>
               )}
 
@@ -419,14 +421,14 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                 className="w-full"
                 onClick={() => setDeleteConfirm(true)}
               >
-                削除
+                {t('common.delete')}
               </Button>
             </div>
           </div>
 
           {/* Customer Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">顧客情報</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('documents.customer')}</h2>
             {customer ? (
               <div className="space-y-2 text-sm">
                 <p className="font-medium text-gray-900">{customer.companyName || customer.name}</p>
@@ -441,21 +443,21 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
                 )}
               </div>
             ) : (
-              <p className="text-gray-500">顧客情報がありません</p>
+              <p className="text-gray-500">{t('common.noData')}</p>
             )}
           </div>
 
           {/* Dates */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">日付</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('common.date')}</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">発行日</span>
+                <span className="text-gray-500">{t('documents.issueDate')}</span>
                 <span className="text-gray-900">{formatDate(document.issueDate)}</span>
               </div>
               {type === 'invoice' && invoice && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">支払期限</span>
+                  <span className="text-gray-500">{t('documents.dueDate')}</span>
                   <span className={new Date(invoice.dueDate) < new Date() && document.status !== 'paid' ? 'text-red-600 font-medium' : 'text-gray-900'}>
                     {formatDate(invoice.dueDate)}
                   </span>
@@ -463,14 +465,10 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
               )}
               {type === 'quotation' && 'validUntil' in document && document.validUntil && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">有効期限</span>
+                  <span className="text-gray-500">{t('documents.validUntil')}</span>
                   <span className="text-gray-900">{formatDate(document.validUntil)}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">作成日</span>
-                <span className="text-gray-900">{formatDate(document.createdAt)}</span>
-              </div>
             </div>
           </div>
         </div>
@@ -491,7 +489,7 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       <Modal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
-        title="プレビュー"
+        title={t('common.preview')}
         size="xl"
       >
         <div className="max-h-[70vh] overflow-y-auto">
@@ -504,10 +502,10 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
         </div>
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
           <Button variant="secondary" onClick={() => setShowPreview(false)}>
-            閉じる
+            {t('common.close')}
           </Button>
-          <Button variant="secondary" onClick={handlePrint}>印刷</Button>
-          <Button onClick={handleDownloadPDF}>PDF出力</Button>
+          <Button variant="secondary" onClick={handlePrint}>{t('common.print')}</Button>
+          <Button onClick={handleDownloadPDF}>{t('documents.pdfExport')}</Button>
         </div>
       </Modal>
 
@@ -515,27 +513,27 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       <Modal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        title="入金を記録"
+        title={t('documents.recordPayment')}
         size="sm"
       >
         <div className="space-y-4">
           <Input
-            label="入金額"
+            label={t('documents.paymentAmount')}
             type="number"
             value={paymentAmount}
             onChange={(e) => setPaymentAmount(e.target.value)}
             placeholder="0"
           />
           <DateInput
-            label="入金日"
+            label={t('documents.paymentDate')}
             value={paymentDate}
             onChange={(value) => setPaymentDate(value)}
           />
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
-              キャンセル
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleRecordPayment}>記録</Button>
+            <Button onClick={handleRecordPayment}>{t('common.save')}</Button>
           </div>
         </div>
       </Modal>
@@ -544,26 +542,26 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
       <Modal
         isOpen={showConvertModal}
         onClose={() => setShowConvertModal(false)}
-        title={type === 'quotation' ? '請求書に変換' : '領収書を発行'}
+        title={type === 'quotation' ? t('documents.convertToInvoice') : t('documents.issueReceipt')}
         size="sm"
       >
         <div className="space-y-4">
           {type === 'quotation' && (
             <DateInput
-              label="支払期限"
+              label={t('documents.dueDate')}
               value={convertDueDate}
               onChange={(value) => setConvertDueDate(value)}
             />
           )}
           {type === 'invoice' && (
             <Select
-              label="支払方法"
+              label={t('documents.paymentMethod')}
               options={[
-                { value: '銀行振込', label: '銀行振込' },
-                { value: '現金', label: '現金' },
-                { value: 'クレジットカード', label: 'クレジットカード' },
-                { value: '口座振替', label: '口座振替' },
-                { value: 'その他', label: 'その他' },
+                { value: t('paymentMethods.bankTransfer'), label: t('paymentMethods.bankTransfer') },
+                { value: t('paymentMethods.cash'), label: t('paymentMethods.cash') },
+                { value: t('paymentMethods.creditCard'), label: t('paymentMethods.creditCard') },
+                { value: t('paymentMethods.directDebit'), label: t('paymentMethods.directDebit') },
+                { value: t('paymentMethods.other'), label: t('paymentMethods.other') },
               ]}
               value={convertPaymentMethod}
               onChange={setConvertPaymentMethod}
@@ -571,10 +569,10 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
           )}
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="secondary" onClick={() => setShowConvertModal(false)}>
-              キャンセル
+              {t('common.cancel')}
             </Button>
             <Button onClick={type === 'quotation' ? handleConvertToInvoice : handleConvertToReceipt}>
-              {type === 'quotation' ? '請求書を作成' : '領収書を発行'}
+              {type === 'quotation' ? t('documents.convertToInvoice') : t('documents.issueReceipt')}
             </Button>
           </div>
         </div>
@@ -585,9 +583,9 @@ export function DocumentDetail({ type }: DocumentDetailProps) {
         isOpen={deleteConfirm}
         onClose={() => setDeleteConfirm(false)}
         onConfirm={handleDelete}
-        title={`${typeLabel}を削除`}
-        message={`「${document.documentNumber}」を削除しますか？この操作は取り消せません。`}
-        confirmText="削除"
+        title={t('common.delete')}
+        message={t('documents.deleteConfirm')}
+        confirmText={t('common.delete')}
         variant="danger"
       />
     </div>

@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button, Input, Modal, ConfirmModal, Select } from '../components/common';
 import { formatCurrency } from '../utils/format';
 import type { Product } from '../types';
 
 export function Products() {
   const { products, addProduct, updateProduct, deleteProduct, settings } = useApp();
+  const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -52,21 +54,21 @@ export function Products() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">商品マスタ</h1>
-          <p className="text-gray-500 mt-1">よく使う商品・サービスを登録しておくと、書類作成時に選択できます</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('products.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('products.subtitle')}</p>
         </div>
         <Button onClick={() => handleOpenModal()}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          商品を追加
+          {t('products.addProduct')}
         </Button>
       </div>
 
       {/* Search */}
       <div className="max-w-md">
         <Input
-          placeholder="商品名、説明で検索..."
+          placeholder={t('common.search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -78,9 +80,9 @@ export function Products() {
           <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">商品がありません</h3>
-          <p className="text-gray-500 mb-4">よく使う商品を登録しておきましょう</p>
-          <Button onClick={() => handleOpenModal()}>商品を追加</Button>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('products.noProducts')}</h3>
+          <p className="text-gray-500 mb-4">{t('products.addFirstProduct')}</p>
+          <Button onClick={() => handleOpenModal()}>{t('products.addProduct')}</Button>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -90,19 +92,19 @@ export function Products() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    商品名
+                    {t('products.productName')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    単位
+                    {t('common.quantity')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    単価
+                    {t('common.unitPrice')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    税率
+                    {t('common.taxRate')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -183,7 +185,7 @@ export function Products() {
                   </div>
                 </div>
                 <div className="mt-2 flex gap-4 text-sm">
-                  <span className="text-gray-500">単位: {product.unit || '-'}</span>
+                  <span className="text-gray-500">{product.unit || '-'}</span>
                   <span className="font-medium text-gray-900">{formatCurrency(product.unitPrice)}</span>
                   <span className="text-gray-500">{product.taxRate}%</span>
                 </div>
@@ -207,9 +209,9 @@ export function Products() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="商品を削除"
-        message={`「${deleteTarget?.name}」を削除しますか？`}
-        confirmText="削除"
+        title={t('common.delete')}
+        message={`${deleteTarget?.name} ${t('documents.deleteConfirm')}`}
+        confirmText={t('common.delete')}
         variant="danger"
       />
     </div>
@@ -225,6 +227,7 @@ interface ProductFormModalProps {
 }
 
 function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: ProductFormModalProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -268,39 +271,36 @@ function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={product ? '商品を編集' : '商品を追加'}
+      title={product ? t('products.editProduct') : t('products.addProduct')}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="商品名 *"
+          label={`${t('products.productName')} *`}
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
-          placeholder="コンサルティング費用"
         />
         <Input
-          label="説明"
+          label={t('common.description')}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="月額顧問料"
         />
         <div className="grid grid-cols-3 gap-4">
           <Input
-            label="単位"
+            label={t('common.quantity')}
             value={formData.unit}
             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-            placeholder="式"
           />
           <Input
-            label="単価 *"
+            label={`${t('common.unitPrice')} *`}
             type="number"
             value={formData.unitPrice}
             onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
             required
           />
           <Select
-            label="税率"
+            label={t('common.taxRate')}
             options={[
               { value: '10', label: '10%' },
               { value: '8', label: '8%' },
@@ -312,10 +312,10 @@ function ProductFormModal({ isOpen, onClose, onSave, product, defaultTaxRate }: 
         </div>
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
-            キャンセル
+            {t('common.cancel')}
           </Button>
           <Button type="submit">
-            {product ? '更新' : '追加'}
+            {product ? t('common.save') : t('common.add')}
           </Button>
         </div>
       </form>

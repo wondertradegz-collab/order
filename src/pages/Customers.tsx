@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button, Input, Modal, ConfirmModal } from '../components/common';
 import { formatDate } from '../utils/format';
 import type { Customer } from '../types';
 
 export function Customers() {
   const { customers, addCustomer, updateCustomer, deleteCustomer, getDocumentsByCustomer } = useApp();
+  const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
@@ -54,21 +56,21 @@ export function Customers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">顧客管理</h1>
-          <p className="text-gray-500 mt-1">取引先の顧客情報を管理します</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('customers.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('customers.subtitle')}</p>
         </div>
         <Button onClick={() => handleOpenModal()}>
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          顧客を追加
+          {t('customers.addCustomer')}
         </Button>
       </div>
 
       {/* Search */}
       <div className="max-w-md">
         <Input
-          placeholder="顧客名、会社名、メールで検索..."
+          placeholder={t('common.search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -80,9 +82,9 @@ export function Customers() {
           <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">顧客がいません</h3>
-          <p className="text-gray-500 mb-4">最初の顧客を追加してください</p>
-          <Button onClick={() => handleOpenModal()}>顧客を追加</Button>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('customers.noCustomers')}</h3>
+          <p className="text-gray-500 mb-4">{t('customers.addFirstCustomer')}</p>
+          <Button onClick={() => handleOpenModal()}>{t('customers.addCustomer')}</Button>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -92,19 +94,19 @@ export function Customers() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    顧客名
+                    {t('customers.customerName')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    連絡先
+                    {t('settings.email')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    書類数
+                    {t('customers.documentCount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    登録日
+                    {t('common.date')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    操作
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -130,7 +132,7 @@ export function Customers() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-gray-900">{docCount}件</span>
+                        <span className="text-gray-900">{docCount}{t('common.items')}</span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {formatDate(customer.createdAt)}
@@ -200,8 +202,8 @@ export function Customers() {
                     {customer.email && <p>{customer.email}</p>}
                     {customer.phone && <p>{customer.phone}</p>}
                     <div className="flex gap-4">
-                      <span>書類: {docCount}件</span>
-                      <span>登録: {formatDate(customer.createdAt)}</span>
+                      <span>{t('customers.documentCount')}: {docCount}{t('common.items')}</span>
+                      <span>{formatDate(customer.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -224,9 +226,9 @@ export function Customers() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="顧客を削除"
-        message={`「${deleteTarget?.name}」を削除しますか？この操作は取り消せません。`}
-        confirmText="削除"
+        title={t('common.delete')}
+        message={`${deleteTarget?.name} ${t('documents.deleteConfirm')}`}
+        confirmText={t('common.delete')}
         variant="danger"
       />
     </div>
@@ -241,6 +243,7 @@ interface CustomerFormModalProps {
 }
 
 function CustomerFormModal({ isOpen, onClose, onSave, customer }: CustomerFormModalProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     companyName: '',
@@ -304,63 +307,57 @@ function CustomerFormModal({ isOpen, onClose, onSave, customer }: CustomerFormMo
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={customer ? '顧客を編集' : '顧客を追加'}
+      title={customer ? t('customers.editCustomer') : t('customers.addCustomer')}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="担当者名 *"
+            label={`${t('customers.contactPerson')} *`}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            placeholder="山田 太郎"
           />
           <Input
-            label="会社名"
+            label={t('customers.companyName')}
             value={formData.companyName}
             onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-            placeholder="株式会社サンプル"
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="メールアドレス"
+            label={t('settings.email')}
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="yamada@example.com"
           />
           <Input
-            label="電話番号"
+            label={t('settings.phone')}
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            placeholder="03-1234-5678"
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
-            label="郵便番号"
+            label={t('settings.postalCode')}
             value={formData.postalCode}
             onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-            placeholder="123-4567"
           />
           <div className="md:col-span-2">
             <Input
-              label="住所"
+              label={t('settings.address')}
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="東京都千代田区..."
             />
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
-            キャンセル
+            {t('common.cancel')}
           </Button>
           <Button type="submit">
-            {customer ? '更新' : '追加'}
+            {customer ? t('common.save') : t('common.add')}
           </Button>
         </div>
       </form>

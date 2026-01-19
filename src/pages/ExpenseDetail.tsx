@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, formatDate } from '../utils/format';
 import { Card, Badge, Button, Modal, Select, Input } from '../components/common';
 import { EXPENSE_REPORT_STATUS_LABELS, EXPENSE_CATEGORY_LABELS } from '../types';
@@ -9,6 +10,7 @@ import type { ExpenseReportStatus, Invoice } from '../types';
 export function ExpenseDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { t } = useLanguage();
   const {
     customers,
     documents,
@@ -40,9 +42,9 @@ export function ExpenseDetail() {
   if (!report) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">経費レポートが見つかりません</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('common.noData')}</p>
         <Button className="mt-4" onClick={() => navigate('/expenses')}>
-          一覧に戻る
+          {t('common.back')}
         </Button>
       </div>
     );
@@ -62,7 +64,7 @@ export function ExpenseDetail() {
   };
 
   const handleDelete = () => {
-    if (window.confirm('この経費レポートを削除しますか？')) {
+    if (window.confirm(t('documents.deleteConfirm'))) {
       deleteExpenseReport(report.id);
       navigate('/expenses');
     }
@@ -70,11 +72,11 @@ export function ExpenseDetail() {
 
   const handleAddToInvoice = () => {
     if (!selectedInvoiceId) {
-      alert('請求書を選択してください');
+      alert(t('expenses.selectInvoice'));
       return;
     }
 
-    const description = invoiceDescription || `出張費 (${report.totalRMB}元 × ${report.exchangeRate}円)`;
+    const description = invoiceDescription || `${report.totalRMB}${t('common.yuan')} × ${report.exchangeRate}${t('expenses.yenPerYuan')}`;
     addExpenseToInvoice(report.id, selectedInvoiceId, description);
     setShowAddToInvoiceModal(false);
     navigate('/expenses');
@@ -88,7 +90,7 @@ export function ExpenseDetail() {
     const invCustomer = customers.find((c) => c.id === inv.customerId);
     return {
       value: inv.id,
-      label: `${inv.documentNumber} - ${invCustomer?.companyName || invCustomer?.name || '不明'}`,
+      label: `${inv.documentNumber} - ${invCustomer?.companyName || invCustomer?.name || t('common.unknown')}`,
     };
   });
 
@@ -104,30 +106,30 @@ export function ExpenseDetail() {
             </Badge>
           </div>
           <p className="text-gray-500 dark:text-gray-400">
-            作成日: {formatDate(report.createdAt)}
-            {customer && ` | 請求先: ${customer.companyName || customer.name}`}
+            {t('common.date')}: {formatDate(report.createdAt)}
+            {customer && ` | ${t('documents.customer')}: ${customer.companyName || customer.name}`}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {report.status !== 'invoiced' && (
             <>
               <Button variant="secondary" onClick={() => navigate(`/expenses/${report.id}/edit`)}>
-                編集
+                {t('common.edit')}
               </Button>
               {report.status === 'draft' && (
                 <Button variant="secondary" onClick={() => handleStatusChange('completed')}>
-                  確定
+                  {t('common.confirm')}
                 </Button>
               )}
               {report.status === 'completed' && (
                 <Button onClick={() => setShowAddToInvoiceModal(true)}>
-                  請求書に追加
+                  {t('expenses.addToInvoice')}
                 </Button>
               )}
             </>
           )}
           <Button variant="danger" onClick={handleDelete}>
-            削除
+            {t('common.delete')}
           </Button>
         </div>
       </div>
@@ -135,19 +137,19 @@ export function ExpenseDetail() {
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-orange-50 dark:bg-orange-900/20">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">合計金額 (RMB)</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.totalRMB')}</p>
           <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-            {report.totalRMB.toLocaleString()}元
+            {report.totalRMB.toLocaleString()}{t('common.yuan')}
           </p>
         </Card>
         <Card className="bg-blue-50 dark:bg-blue-900/20">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">為替レート</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.exchangeRate')}</p>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-            {report.exchangeRate}円/元
+            {report.exchangeRate}{t('expenses.yenPerYuan')}
           </p>
         </Card>
         <Card className="bg-green-50 dark:bg-green-900/20">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">合計金額 (JPY)</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('expenses.totalJPY')}</p>
           <p className="text-3xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(report.totalJPY)}
           </p>
@@ -156,27 +158,27 @@ export function ExpenseDetail() {
 
       {/* Invoice Format Preview */}
       <Card>
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">請求書への記載形式</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('documents.invoice')}</h2>
         <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg font-mono text-sm">
-          出張費 / {report.totalRMB}元 × {report.exchangeRate}円 / {formatCurrency(report.totalJPY)}
+          {report.totalRMB}{t('common.yuan')} × {report.exchangeRate}{t('expenses.yenPerYuan')} / {formatCurrency(report.totalJPY)}
         </div>
       </Card>
 
       {/* Expense Items */}
       <Card>
         <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
-          経費明細 ({report.expenses.length}件)
+          {t('documents.lineItems')} ({report.expenses.length}{t('common.items')})
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">日付</th>
-                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">カテゴリ</th>
-                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">説明</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">金額(RMB)</th>
-                <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">金額(JPY)</th>
-                <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">証憑</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('common.date')}</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('products.category')}</th>
+                <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('common.description')}</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('expenses.amountRMB')}</th>
+                <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('expenses.amountJPY')}</th>
+                <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">{t('expenses.screenshot')}</th>
               </tr>
             </thead>
             <tbody>
@@ -195,7 +197,7 @@ export function ExpenseDetail() {
                     {expense.description || '-'}
                   </td>
                   <td className="py-3 px-2 text-right font-medium text-orange-600 dark:text-orange-400">
-                    {expense.amountRMB.toLocaleString()}元
+                    {expense.amountRMB.toLocaleString()}{t('common.yuan')}
                   </td>
                   <td className="py-3 px-2 text-right text-gray-600 dark:text-gray-300">
                     {formatCurrency(Math.round(expense.amountRMB * report.exchangeRate))}
@@ -206,7 +208,7 @@ export function ExpenseDetail() {
                         onClick={() => setShowImageModal(expense.screenshot!)}
                         className="text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        📷 表示
+                        {t('common.preview')}
                       </button>
                     ) : (
                       <span className="text-gray-400">-</span>
@@ -218,10 +220,10 @@ export function ExpenseDetail() {
             <tfoot>
               <tr className="bg-gray-50 dark:bg-gray-700/50 font-semibold">
                 <td colSpan={3} className="py-3 px-2 text-gray-900 dark:text-white">
-                  合計
+                  {t('common.total')}
                 </td>
                 <td className="py-3 px-2 text-right text-orange-600 dark:text-orange-400">
-                  {report.totalRMB.toLocaleString()}元
+                  {report.totalRMB.toLocaleString()}{t('common.yuan')}
                 </td>
                 <td className="py-3 px-2 text-right text-green-600 dark:text-green-400">
                   {formatCurrency(report.totalJPY)}
@@ -236,7 +238,7 @@ export function ExpenseDetail() {
       {/* Notes */}
       {report.notes && (
         <Card>
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">備考</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('common.notes')}</h2>
           <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{report.notes}</p>
         </Card>
       )}
@@ -244,12 +246,12 @@ export function ExpenseDetail() {
       {/* Linked Invoice */}
       {report.invoiceId && (
         <Card>
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">連携済み請求書</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">{t('documents.invoice')}</h2>
           <Link
             to={`/invoices/${report.invoiceId}`}
             className="text-blue-600 dark:text-blue-400 hover:underline"
           >
-            請求書を表示 →
+            {t('common.preview')} →
           </Link>
         </Card>
       )}
@@ -258,43 +260,43 @@ export function ExpenseDetail() {
       <Modal
         isOpen={showAddToInvoiceModal}
         onClose={() => setShowAddToInvoiceModal(false)}
-        title="請求書に追加"
+        title={t('expenses.addToInvoice')}
       >
         <div className="space-y-4">
           <p className="text-gray-600 dark:text-gray-300">
-            この経費レポートを請求書の明細に追加します。
+            {t('expenses.addToInvoice')}
           </p>
 
           <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">追加される金額</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('common.amount')}</p>
             <p className="text-xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(report.totalJPY)}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              ({report.totalRMB}元 × {report.exchangeRate}円)
+              ({report.totalRMB}{t('common.yuan')} × {report.exchangeRate}{t('expenses.yenPerYuan')})
             </p>
           </div>
 
           <Select
-            label="追加先の請求書"
+            label={t('expenses.selectInvoice')}
             value={selectedInvoiceId}
             onChange={(value) => setSelectedInvoiceId(value)}
-            options={[{ value: '', label: '請求書を選択してください' }, ...invoiceOptions]}
+            options={[{ value: '', label: t('expenses.selectInvoice') }, ...invoiceOptions]}
           />
 
           <Input
-            label="明細の説明"
+            label={t('common.description')}
             value={invoiceDescription}
             onChange={(e) => setInvoiceDescription(e.target.value)}
-            placeholder={`出張費 (${report.totalRMB}元 × ${report.exchangeRate}円)`}
+            placeholder={`${report.totalRMB}${t('common.yuan')} × ${report.exchangeRate}${t('expenses.yenPerYuan')}`}
           />
 
           <div className="flex justify-end gap-3 mt-6">
             <Button variant="secondary" onClick={() => setShowAddToInvoiceModal(false)}>
-              キャンセル
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleAddToInvoice}>
-              請求書に追加
+              {t('expenses.addToInvoice')}
             </Button>
           </div>
         </div>
@@ -304,13 +306,13 @@ export function ExpenseDetail() {
       <Modal
         isOpen={!!showImageModal}
         onClose={() => setShowImageModal(null)}
-        title="支払い証憑"
+        title={t('expenses.screenshot')}
       >
         {showImageModal && (
           <div className="flex justify-center">
             <img
               src={showImageModal}
-              alt="支払い証憑"
+              alt={t('expenses.screenshot')}
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
           </div>

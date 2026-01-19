@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useApp } from '../contexts/AppContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCurrency, getTodayString } from '../utils/format';
 import { Card, Button, Input, Select, DateInput } from '../components/common';
 import { getCachedExchangeRate, getHistoricalExchangeRate, getMonthlyAverageRate } from '../utils/exchangeRate';
@@ -15,6 +16,7 @@ interface ExpenseEditorProps {
 export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { t } = useLanguage();
   const { customers, addExpenseReport, updateExpenseReport, getExpenseReport } = useApp();
 
   const [name, setName] = useState('');
@@ -49,7 +51,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       // 新規作成時はデフォルト値
       const today = new Date();
       const monthStr = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}`;
-      setName(`${monthStr} 出張経費`);
+      setName(`${monthStr}`);
       addExpenseRow();
     }
   }, [mode, id, getExpenseReport]);
@@ -75,22 +77,22 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
 
       if (dateType === 'latest') {
         result = await getCachedExchangeRate('latest', 'CNY', 'JPY');
-        setRateInfo(`最新レート (${result.date})`);
+        setRateInfo(`${result.date}`);
       } else if (dateType === 'specific' && rateFetchDate !== 'latest') {
         result = await getHistoricalExchangeRate(rateFetchDate, 'CNY', 'JPY');
-        setRateInfo(`${rateFetchDate} のレート`);
+        setRateInfo(`${rateFetchDate}`);
       } else if (dateType === 'monthly') {
         const today = new Date();
         result = await getMonthlyAverageRate(today.getFullYear(), today.getMonth() + 1, 'CNY', 'JPY');
-        setRateInfo(`${result.date} の月平均レート`);
+        setRateInfo(`${result.date} ${t('expenses.monthlyAverage')}`);
       } else {
         result = await getCachedExchangeRate('latest', 'CNY', 'JPY');
-        setRateInfo(`最新レート (${result.date})`);
+        setRateInfo(`${result.date}`);
       }
 
       setExchangeRate(result.rate);
     } catch (error) {
-      setRateError(error instanceof Error ? error.message : '為替レートの取得に失敗しました');
+      setRateError(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setIsFetchingRate(false);
     }
@@ -234,7 +236,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   };
 
   const customerOptions = [
-    { value: '', label: '未設定' },
+    { value: '', label: t('common.unknown') },
     ...customers.map((c) => ({
       value: c.id,
       label: c.companyName || c.name,
@@ -252,29 +254,28 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {mode === 'create' ? '経費レポート作成' : '経費レポート編集'}
+            {mode === 'create' ? t('expenses.createReport') : t('expenses.editReport')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            WeChat Pay等の支払いを記録してください
+            {t('expenses.subtitle')}
           </p>
         </div>
         <Button variant="secondary" onClick={() => navigate('/expenses')}>
-          キャンセル
+          {t('common.cancel')}
         </Button>
       </div>
 
       {/* Basic Info */}
       <Card>
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">基本情報</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">{t('expenses.reportName')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <Input
-            label="レポート名"
+            label={t('expenses.reportName')}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="例: 2024/01 出張経費"
           />
           <Select
-            label="請求先顧客"
+            label={t('documents.customer')}
             value={customerId}
             onChange={(value) => setCustomerId(value)}
             options={customerOptions}
@@ -284,7 +285,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
         {/* Exchange Rate Section */}
         <div className="border-t pt-4 dark:border-gray-600">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">為替レート（円/元）</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('expenses.exchangeRate')}</h3>
             {rateInfo && (
               <span className="text-xs text-green-600 dark:text-green-400">{rateInfo}</span>
             )}
@@ -301,7 +302,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                   onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
-                <span className="flex items-center text-gray-500 dark:text-gray-400">円/元</span>
+                <span className="flex items-center text-gray-500 dark:text-gray-400">{t('expenses.yenPerYuan')}</span>
               </div>
             </div>
 
@@ -313,7 +314,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 onClick={() => fetchExchangeRate('latest')}
                 disabled={isFetchingRate}
               >
-                {isFetchingRate ? '取得中...' : '最新レート取得'}
+                {isFetchingRate ? t('common.loading') : t('expenses.fetchLatestRate')}
               </Button>
               <Button
                 variant="secondary"
@@ -321,14 +322,14 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 onClick={() => fetchExchangeRate('monthly')}
                 disabled={isFetchingRate}
               >
-                今月平均
+                {t('expenses.monthlyAverage')}
               </Button>
             </div>
           </div>
 
           {/* Historical Rate Fetch */}
           <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">過去の日付で為替レートを取得</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('expenses.historicalRateFetch')}</p>
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex-1 min-w-[200px]">
                 <DateInput
@@ -342,7 +343,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 onClick={() => fetchExchangeRate('specific')}
                 disabled={isFetchingRate || rateFetchDate === 'latest'}
               >
-                この日のレートを取得
+                {t('expenses.fetchHistoricalRate')}
               </Button>
             </div>
           </div>
@@ -359,7 +360,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       {/* Expense Items */}
       <Card>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900 dark:text-white">経費明細</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">{t('documents.lineItems')}</h2>
           <div className="flex gap-2">
             {/* 一括画像追加ボタン */}
             <input
@@ -378,13 +379,13 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              画像から追加
+              {t('common.import')}
             </Button>
             <Button variant="secondary" size="sm" onClick={addExpenseRow}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              行を追加
+              {t('expenses.addRow')}
             </Button>
           </div>
         </div>
@@ -406,30 +407,27 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             <p className={`text-sm ${isDragging ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
-              {isDragging ? '画像をドロップして追加' : '画像をドラッグ＆ドロップ、または Ctrl+V で貼り付け'}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              複数の画像を一度に追加すると、その枚数分の項目が自動作成されます
+              {t('common.import')}
             </p>
           </div>
         </div>
 
         {expenses.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <p>経費明細がありません</p>
+            <p>{t('common.noData')}</p>
             <Button variant="secondary" className="mt-4" onClick={addExpenseRow}>
-              最初の経費を追加
+              {t('expenses.addRow')}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Header Row */}
             <div className="hidden md:grid md:grid-cols-12 gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 px-2">
-              <div className="col-span-3">日付</div>
-              <div className="col-span-2">金額(RMB)</div>
-              <div className="col-span-2">カテゴリ</div>
-              <div className="col-span-2">説明</div>
-              <div className="col-span-2">スクショ</div>
+              <div className="col-span-3">{t('common.date')}</div>
+              <div className="col-span-2">{t('expenses.amountRMB')}</div>
+              <div className="col-span-2">{t('products.category')}</div>
+              <div className="col-span-2">{t('common.description')}</div>
+              <div className="col-span-2">{t('expenses.screenshot')}</div>
               <div className="col-span-1"></div>
             </div>
 
@@ -440,14 +438,14 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                 className="grid grid-cols-1 md:grid-cols-12 gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
               >
                 <div className="md:col-span-3">
-                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">日付</label>
+                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('common.date')}</label>
                   <DateInput
                     value={expense.date}
                     onChange={(value) => updateExpense(expense.id, { date: value })}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">金額(RMB)</label>
+                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('expenses.amountRMB')}</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -457,11 +455,11 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                       placeholder="0.00"
                       className="w-full px-3 py-2 pr-8 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">元</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{t('common.yuan')}</span>
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">カテゴリ</label>
+                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('products.category')}</label>
                   <select
                     value={expense.category || 'other'}
                     onChange={(e) => updateExpense(expense.id, { category: e.target.value as ExpenseCategory })}
@@ -475,17 +473,16 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">説明</label>
+                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('common.description')}</label>
                   <input
                     type="text"
                     value={expense.description || ''}
                     onChange={(e) => updateExpense(expense.id, { description: e.target.value })}
-                    placeholder="タクシー、昼食など"
                     className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">スクショ</label>
+                  <label className="md:hidden text-xs text-gray-500 dark:text-gray-400 mb-1 block">{t('expenses.screenshot')}</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -509,7 +506,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                         onClick={() => updateExpense(expense.id, { screenshot: undefined })}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
-                        削除
+                        {t('common.delete')}
                       </button>
                     </div>
                   ) : (
@@ -518,7 +515,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
                       onClick={() => fileInputRefs.current[expense.id]?.click()}
                       className="w-full px-3 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
                     >
-                      📷 添付
+                      {t('common.add')}
                     </button>
                   )}
                 </div>
@@ -543,19 +540,19 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       <Card className="bg-gradient-to-r from-orange-50 to-green-50 dark:from-orange-900/20 dark:to-green-900/20">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">経費明細: {expenses.length}件</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">為替レート: {exchangeRate}円/元</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{t('documents.lineItems')}: {expenses.length}{t('common.items')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.exchangeRate')}: {exchangeRate}{t('expenses.yenPerYuan')}</p>
           </div>
           <div className="flex items-center gap-8">
             <div className="text-right">
-              <p className="text-sm text-gray-500 dark:text-gray-400">合計 (RMB)</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalRMB')}</p>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {totals.totalRMB.toLocaleString()}元
+                {totals.totalRMB.toLocaleString()}{t('common.yuan')}
               </p>
             </div>
             <div className="text-3xl text-gray-400">→</div>
             <div className="text-right">
-              <p className="text-sm text-gray-500 dark:text-gray-400">合計 (JPY)</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('expenses.totalJPY')}</p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(totals.totalJPY)}
               </p>
@@ -566,11 +563,10 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
 
       {/* Notes */}
       <Card>
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">備考</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">{t('common.notes')}</h2>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="備考があれば入力してください"
           rows={3}
           className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         />
@@ -579,13 +575,13 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
         <Button variant="secondary" onClick={() => navigate('/expenses')}>
-          キャンセル
+          {t('common.cancel')}
         </Button>
         <Button variant="secondary" onClick={() => handleSave('draft')}>
-          下書き保存
+          {t('status.draft')} {t('common.save')}
         </Button>
         <Button onClick={() => handleSave('completed')}>
-          確定して保存
+          {t('common.confirm')} {t('common.save')}
         </Button>
       </div>
     </div>

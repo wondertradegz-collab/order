@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Input } from '../common';
 import { useApp } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { formatCurrency } from '../../utils/format';
 import type { LineItem, Product, ItemSet, Customer, ItemCategory } from '../../types';
 import { ITEM_CATEGORY_LABELS } from '../../types';
@@ -15,16 +16,17 @@ interface LineItemEditorProps {
 }
 
 const CURRENCY_OPTIONS = [
-  { code: 'CNY', symbol: '元', name: '中国人民元' },
-  { code: 'USD', symbol: '$', name: '米ドル' },
-  { code: 'EUR', symbol: '€', name: 'ユーロ' },
-  { code: 'GBP', symbol: '£', name: '英ポンド' },
-  { code: 'KRW', symbol: '₩', name: '韓国ウォン' },
-  { code: 'TWD', symbol: 'NT$', name: '台湾ドル' },
+  { code: 'CNY', symbol: '元' },
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'KRW', symbol: '₩' },
+  { code: 'TWD', symbol: 'NT$' },
 ];
 
 export function LineItemEditor({ items, onChange, defaultTaxRate, products = [], customer }: LineItemEditorProps) {
   const { itemSets } = useApp();
+  const { t } = useLanguage();
   const [showProductSelector, setShowProductSelector] = useState<string | null>(null);
   const [showItemSetSelector, setShowItemSetSelector] = useState(false);
   const [foreignCurrencyMode, setForeignCurrencyMode] = useState<Set<string>>(new Set());
@@ -205,6 +207,10 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
     return currency?.symbol || code || '';
   };
 
+  const getCurrencyName = (code: string) => {
+    return t(`currencies.${code}`) || code;
+  };
+
   // Check if item has foreign currency data (either in mode or has existing data)
   const hasForeignCurrency = (item: LineItem) => {
     return foreignCurrencyMode.has(item.id) || (item.foreignAmount !== undefined && item.foreignAmount > 0);
@@ -227,12 +233,12 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
     <div className="space-y-4">
       {/* Desktop Header */}
       <div className="hidden md:grid md:grid-cols-12 gap-2 px-2 text-sm font-medium text-gray-500">
-        <div className="col-span-4">品名・摘要</div>
-        <div className="col-span-1 text-center">区分</div>
-        <div className="col-span-2 text-right">数量</div>
-        <div className="col-span-2 text-right">単価</div>
-        <div className="col-span-1 text-right">税率</div>
-        <div className="col-span-2 text-right">金額</div>
+        <div className="col-span-4">{t('lineItems.itemDescription')}</div>
+        <div className="col-span-1 text-center">{t('lineItems.category')}</div>
+        <div className="col-span-2 text-right">{t('common.quantity')}</div>
+        <div className="col-span-2 text-right">{t('common.unitPrice')}</div>
+        <div className="col-span-1 text-right">{t('common.taxRate')}</div>
+        <div className="col-span-2 text-right">{t('lineItems.amount')}</div>
       </div>
 
       {/* Items */}
@@ -259,7 +265,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                     </svg>
                   </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">明細 {index + 1}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{t('lineItems.lineItem')} {index + 1}</span>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -270,7 +276,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                         ? 'text-green-600 bg-green-50'
                         : 'text-gray-400 hover:text-green-600'
                     }`}
-                    title="外貨換算"
+                    title={t('lineItems.foreignCurrency')}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -288,14 +294,14 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                 </div>
               </div>
               <Input
-                placeholder="品名・摘要"
+                placeholder={t('lineItems.itemDescription')}
                 value={item.description}
                 onChange={(e) => updateItem(item.id, 'description', e.target.value)}
               />
 
               {/* Category Selector - Mobile */}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">区分</label>
+                <label className="text-xs text-gray-500 mb-1 block">{t('lineItems.category')}</label>
                 <select
                   value={item.category || 'revenue'}
                   onChange={(e) => updateItem(item.id, 'category', e.target.value as ItemCategory)}
@@ -316,10 +322,10 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
               {/* Foreign Currency Fields - Mobile */}
               {hasForeignCurrency(item) && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                  <div className="text-xs font-medium text-green-700 mb-2">外貨換算</div>
+                  <div className="text-xs font-medium text-green-700 mb-2">{t('lineItems.foreignCurrency')}</div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">通貨</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{t('lineItems.currency')}</label>
                       <select
                         value={item.foreignCurrency || 'CNY'}
                         onChange={(e) => updateItem(item.id, 'foreignCurrency', e.target.value)}
@@ -333,7 +339,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">金額</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{t('lineItems.amount')}</label>
                       <input
                         type="number"
                         min="0"
@@ -345,7 +351,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">レート(円)</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{t('lineItems.rate')}</label>
                       <input
                         type="number"
                         min="0"
@@ -367,7 +373,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">数量</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t('common.quantity')}</label>
                   <input
                     type="number"
                     min="1"
@@ -378,7 +384,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">単価</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t('common.unitPrice')}</label>
                   <input
                     type="number"
                     min="0"
@@ -392,7 +398,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">税率</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{t('common.taxRate')}</label>
                   <select
                     value={item.taxRate}
                     onChange={(e) => updateItem(item.id, 'taxRate', parseInt(e.target.value))}
@@ -405,7 +411,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-sm text-gray-500">小計: </span>
+                <span className="text-sm text-gray-500">{t('common.subtotal')}: </span>
                 <span className="font-semibold text-gray-900">{formatCurrency(calculateItemTotal(item))}</span>
               </div>
             </div>
@@ -421,7 +427,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                   </div>
                   <input
                     type="text"
-                    placeholder="品名・摘要"
+                    placeholder={t('lineItems.itemDescription')}
                     value={item.description}
                     onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -434,7 +440,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                         ? 'text-green-600 bg-green-50 border-green-300'
                         : 'text-gray-400 border-gray-300 hover:text-green-600 hover:border-green-300'
                     }`}
-                    title="外貨換算"
+                    title={t('lineItems.foreignCurrency')}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -454,9 +460,9 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                         : 'border-gray-300 bg-white'
                     }`}
                   >
-                    <option value="revenue">売上</option>
-                    <option value="expense_reimbursement">立替</option>
-                    <option value="discount">値引</option>
+                    <option value="revenue">{t('lineItems.revenue')}</option>
+                    <option value="expense_reimbursement">{t('lineItems.reimbursement')}</option>
+                    <option value="discount">{t('lineItems.discount')}</option>
                   </select>
                 </div>
                 <div className="col-span-2">
@@ -513,7 +519,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
               {hasForeignCurrency(item) && (
                 <div className="ml-0 bg-green-50 border border-green-200 rounded-lg p-3">
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-green-700">外貨換算:</span>
+                    <span className="text-sm font-medium text-green-700">{t('lineItems.foreignCurrency')}:</span>
                     <select
                       value={item.foreignCurrency || 'CNY'}
                       onChange={(e) => updateItem(item.id, 'foreignCurrency', e.target.value)}
@@ -521,7 +527,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                     >
                       {CURRENCY_OPTIONS.map((c) => (
                         <option key={c.code} value={c.code}>
-                          {c.symbol} {c.name}
+                          {c.symbol} {getCurrencyName(c.code)}
                         </option>
                       ))}
                     </select>
@@ -532,7 +538,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                         step="0.01"
                         value={item.foreignAmount || ''}
                         onChange={(e) => updateItem(item.id, 'foreignAmount', parseFloat(e.target.value) || 0)}
-                        placeholder="金額"
+                        placeholder={t('lineItems.amount')}
                         className="w-28 px-2 py-1 border border-green-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
                       <span className="text-green-700">{getCurrencySymbol(item.foreignCurrency)}</span>
@@ -543,10 +549,10 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
                         step="0.01"
                         value={item.exchangeRate || ''}
                         onChange={(e) => updateItem(item.id, 'exchangeRate', parseFloat(e.target.value) || 0)}
-                        placeholder="レート"
+                        placeholder={t('lineItems.rate')}
                         className="w-24 px-2 py-1 border border-green-300 rounded text-right text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                       />
-                      <span className="text-green-700">円</span>
+                      <span className="text-green-700">{t('common.yen')}</span>
                     </div>
                     {item.foreignAmount && item.exchangeRate && (
                       <span className="text-sm font-medium text-green-700">
@@ -571,7 +577,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          明細を追加
+          {t('lineItems.addLineItem')}
         </button>
         <button
           type="button"
@@ -581,9 +587,9 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          外貨立替を追加
+          {t('lineItems.addForeignExpense')}
         </button>
-        {/* 作業セット呼び出しボタン */}
+        {/* Item Set Call Button */}
         {itemSets.length > 0 && (
           <div className="relative flex-1">
             <button
@@ -594,12 +600,12 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              セット呼び出し
+              {t('lineItems.callSet')}
             </button>
             {showItemSetSelector && (
               <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto">
                 <div className="p-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600 sticky top-0">
-                  セットを選択すると複数の明細がまとめて追加されます
+                  {t('lineItems.setSelectHint')}
                 </div>
                 {itemSets.map((itemSet) => (
                   <button
@@ -635,7 +641,7 @@ export function LineItemEditor({ items, onChange, defaultTaxRate, products = [],
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              商品から追加
+              {t('lineItems.addFromProducts')}
             </button>
             {showProductSelector && (
               <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto">
@@ -674,7 +680,9 @@ interface TotalsSummaryProps {
 }
 
 export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSummaryProps) {
-  // カテゴリ別の集計
+  const { t } = useLanguage();
+
+  // Category breakdown
   const revenueItems = items.filter((item) => !item.category || item.category === 'revenue');
   const expenseItems = items.filter((item) => item.category === 'expense_reimbursement');
   const discountItems = items.filter((item) => item.category === 'discount');
@@ -701,15 +709,15 @@ export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSum
 
   return (
     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
-      {/* カテゴリ別内訳（売上と立替経費が混在する場合のみ表示） */}
+      {/* Category breakdown (shown only when both revenue and expenses exist) */}
       {showCategoryBreakdown && (hasExpenses || hasDiscounts) && (
         <div className="pb-2 mb-2 border-b border-gray-200 dark:border-gray-600 space-y-1">
-          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">内訳</div>
+          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('lineItems.breakdown')}</div>
           {revenueItems.length > 0 && (
             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                売上
+                {t('lineItems.revenue')}
               </span>
               <span>{formatCurrency(revenueSubtotal + revenueTax)}</span>
             </div>
@@ -718,7 +726,7 @@ export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSum
             <div className="flex justify-between text-sm text-orange-600 dark:text-orange-400">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                立替経費
+                {t('lineItems.expenseReimbursement')}
               </span>
               <span>{formatCurrency(expenseSubtotal + expenseTax)}</span>
             </div>
@@ -727,7 +735,7 @@ export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSum
             <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                値引き
+                {t('documents.categoryDiscount')}
               </span>
               <span>-{formatCurrency(discountSubtotal + discountTax)}</span>
             </div>
@@ -736,23 +744,23 @@ export function TotalsSummary({ items, showCategoryBreakdown = true }: TotalsSum
       )}
 
       <div className="flex justify-between text-gray-600 dark:text-gray-400">
-        <span>小計</span>
+        <span>{t('common.subtotal')}</span>
         <span>{formatCurrency(subtotal)}</span>
       </div>
       <div className="flex justify-between text-gray-600 dark:text-gray-400">
-        <span>消費税</span>
+        <span>{t('common.tax')}</span>
         <span>{formatCurrency(taxAmount)}</span>
       </div>
       <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-gray-600">
-        <span>合計</span>
+        <span>{t('common.total')}</span>
         <span>{formatCurrency(total)}</span>
       </div>
 
-      {/* 純売上の表示（立替経費がある場合） */}
+      {/* Net revenue display (shown when expenses exist) */}
       {showCategoryBreakdown && hasExpenses && (
         <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-600">
           <div className="flex justify-between text-sm text-blue-600 dark:text-blue-400 font-medium">
-            <span>純売上（税込）</span>
+            <span>{t('lineItems.netRevenueTaxIncluded')}</span>
             <span>{formatCurrency(revenueSubtotal + revenueTax - discountSubtotal - discountTax)}</span>
           </div>
         </div>

@@ -82,7 +82,7 @@ export function Products() {
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">{t('products.noProducts')}</h3>
           <p className="text-gray-500 mb-4">{t('products.addFirstProduct')}</p>
-          <Button onClick={() => handleOpenModal()}>{t('products.addProduct')}</Button>
+          <Button onClick={() => handleOpenModal()} className="min-h-[44px]">{t('products.addProduct')}</Button>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

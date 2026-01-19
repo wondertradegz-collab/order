@@ -59,7 +59,7 @@ export function Customers() {
           <h1 className="text-2xl font-bold text-gray-900">{t('customers.title')}</h1>
           <p className="text-gray-500 mt-1">{t('customers.subtitle')}</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
+        <Button onClick={() => handleOpenModal()} className="w-full sm:w-auto min-h-[44px]">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
@@ -84,7 +84,7 @@ export function Customers() {
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">{t('customers.noCustomers')}</h3>
           <p className="text-gray-500 mb-4">{t('customers.addFirstCustomer')}</p>
-          <Button onClick={() => handleOpenModal()}>{t('customers.addCustomer')}</Button>
+          <Button onClick={() => handleOpenModal()} className="min-h-[44px]">{t('customers.addCustomer')}</Button>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -182,7 +182,7 @@ export function Customers() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleOpenModal(customer)}
-                        className="p-2 text-gray-400 hover:text-blue-600"
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -190,7 +190,7 @@ export function Customers() {
                       </button>
                       <button
                         onClick={() => setDeleteTarget(customer)}
-                        className="p-2 text-gray-400 hover:text-red-600"
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -352,11 +352,11 @@ function CustomerFormModal({ isOpen, onClose, onSave, customer }: CustomerFormMo
             />
           </div>
         </div>
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full sm:w-auto min-h-[44px]">
             {t('common.cancel')}
           </Button>
-          <Button type="submit">
+          <Button type="submit" className="w-full sm:w-auto min-h-[44px]">
             {customer ? t('common.save') : t('common.add')}
           </Button>
         </div>

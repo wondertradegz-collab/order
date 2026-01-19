@@ -62,8 +62,8 @@ export function ExpenseSplits() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('expenseSplit.title')}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{t('expenseSplit.subtitle')}</p>
         </div>
-        <Link to="/expense-splits/new">
-          <Button>
+        <Link to="/expense-splits/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto min-h-[44px]">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -90,7 +90,7 @@ export function ExpenseSplits() {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t('expenseSplit.noData')}</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">{t('expenseSplit.createFirst')}</p>
           <Link to="/expense-splits/new">
-            <Button>{t('expenseSplit.create')}</Button>
+            <Button className="min-h-[44px]">{t('expenseSplit.create')}</Button>
           </Link>
         </div>
       ) : (

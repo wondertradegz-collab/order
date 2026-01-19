@@ -269,39 +269,143 @@ export function ExpenseSplitEditor({ mode }: Props) {
         {participants.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400 text-center py-8">{t('expenseSplit.noParticipants')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.participantName')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.linkedCustomer')}</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.totalShare')}</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.invoiceStatus')}</th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.paymentStatus')}</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {participants.map((p) => {
-                  const customer = customers.find((c) => c.id === p.customerId);
-                  const isPayer = p.id === paidByParticipantId;
-                  return (
-                    <tr key={p.id} className={isPayer ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">{p.name}</span>
-                          {isPayer && (
-                            <Badge color="blue">{t('expenseSplit.payer')}</Badge>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.participantName')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.linkedCustomer')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.totalShare')}</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.invoiceStatus')}</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.paymentStatus')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                  {participants.map((p) => {
+                    const customer = customers.find((c) => c.id === p.customerId);
+                    const isPayer = p.id === paidByParticipantId;
+                    return (
+                      <tr key={p.id} className={isPayer ? 'bg-blue-50 dark:bg-blue-900/20' : ''}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 dark:text-white">{p.name}</span>
+                            {isPayer && (
+                              <Badge color="blue">{t('expenseSplit.payer')}</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                          {customer ? customer.name : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
+                          {formatCurrency(p.totalAmount)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {p.invoiceIssued ? (
+                            <Badge color="green">{t('expenseSplit.issued')}</Badge>
+                          ) : p.customerId && p.totalAmount > 0 && mode === 'edit' ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setInvoiceTargetParticipant(p);
+                                setIsInvoiceModalOpen(true);
+                              }}
+                            >
+                              {t('expenseSplit.issueInvoice')}
+                            </Button>
+                          ) : (
+                            <span className="text-gray-400">-</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {p.totalAmount > 0 ? (
+                            <button
+                              onClick={() => handleTogglePayment(p.id, !p.paymentReceived)}
+                              className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                                p.paymentReceived
+                                  ? 'bg-green-500 border-green-500 text-white'
+                                  : 'border-gray-300 dark:border-gray-600 hover:border-green-500'
+                              }`}
+                              disabled={mode !== 'edit'}
+                            >
+                              {p.paymentReceived && (
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => { setEditingParticipant(p); setIsParticipantModalOpen(true); }}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteParticipant(p.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-600">
+              {participants.map((p) => {
+                const customer = customers.find((c) => c.id === p.customerId);
+                const isPayer = p.id === paidByParticipantId;
+                return (
+                  <div key={p.id} className={`p-4 ${isPayer ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-gray-900 dark:text-white">{p.name}</span>
+                          {isPayer && <Badge color="blue">{t('expenseSplit.payer')}</Badge>}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                        {customer ? customer.name : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(p.totalAmount)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
+                        {customer && <p className="text-sm text-gray-500 dark:text-gray-400">{customer.name}</p>}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => { setEditingParticipant(p); setIsParticipantModalOpen(true); }}
+                          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteParticipant(p.id)}
+                          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(p.totalAmount)}</span>
+                      <div className="flex items-center gap-3">
                         {p.invoiceIssued ? (
                           <Badge color="green">{t('expenseSplit.issued')}</Badge>
                         ) : p.customerId && p.totalAmount > 0 && mode === 'edit' ? (
@@ -312,18 +416,15 @@ export function ExpenseSplitEditor({ mode }: Props) {
                               setInvoiceTargetParticipant(p);
                               setIsInvoiceModalOpen(true);
                             }}
+                            className="min-h-[44px]"
                           >
                             {t('expenseSplit.issueInvoice')}
                           </Button>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {p.totalAmount > 0 ? (
+                        ) : null}
+                        {p.totalAmount > 0 && (
                           <button
                             onClick={() => handleTogglePayment(p.id, !p.paymentReceived)}
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                            className={`w-10 h-10 rounded border-2 flex items-center justify-center transition-colors ${
                               p.paymentReceived
                                 ? 'bg-green-500 border-green-500 text-white'
                                 : 'border-gray-300 dark:border-gray-600 hover:border-green-500'
@@ -331,41 +432,19 @@ export function ExpenseSplitEditor({ mode }: Props) {
                             disabled={mode !== 'edit'}
                           >
                             {p.paymentReceived && (
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                             )}
                           </button>
-                        ) : (
-                          <span className="text-gray-400">-</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            onClick={() => { setEditingParticipant(p); setIsParticipantModalOpen(true); }}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteParticipant(p.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -391,103 +470,185 @@ export function ExpenseSplitEditor({ mode }: Props) {
             {participants.length === 0 ? t('expenseSplit.addParticipantsFirst') : t('expenseSplit.noItems')}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.date')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.description')}</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.total')}</th>
-                  {participants.map((p) => (
-                    <th key={p.id} className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      {p.name}
-                    </th>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.date')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.description')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.total')}</th>
+                    {participants.map((p) => (
+                      <th key={p.id} className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        {p.name}
+                      </th>
+                    ))}
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.receipt')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                  {items.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white whitespace-nowrap">
+                        {formatDate(item.date)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {item.description}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
+                        {formatCurrency(item.totalAmount)}
+                      </td>
+                      {participants.map((p) => {
+                        const split = item.splits.find((s) => s.participantId === p.id);
+                        return (
+                          <td key={p.id} className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
+                            {split && split.amount > 0 ? formatCurrency(split.amount) : '-'}
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-3 text-center">
+                        {item.receiptUrl ? (
+                          <a
+                            href={item.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        ) : item.receiptImage ? (
+                          <span className="text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('expenseSplit.receipt')}</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white whitespace-nowrap">
-                      {formatDate(item.date)}
+                  {/* Totals Row */}
+                  <tr className="bg-gray-50 dark:bg-gray-700 font-semibold">
+                    <td className="px-4 py-3" colSpan={2}>{t('common.total')}</td>
+                    <td className="px-4 py-3 text-right text-gray-900 dark:text-white">
+                      {formatCurrency(totalAmount)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white">
-                      {item.description}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-white">
-                      {formatCurrency(item.totalAmount)}
-                    </td>
-                    {participants.map((p) => {
-                      const split = item.splits.find((s) => s.participantId === p.id);
+                    {participants.map((p) => (
+                      <td key={p.id} className="px-4 py-3 text-right text-gray-900 dark:text-white">
+                        {formatCurrency(p.totalAmount)}
+                      </td>
+                    ))}
+                    <td className="px-4 py-3"></td>
+                    <td className="px-4 py-3"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-3">
+              {items.map((item) => (
+                <div key={item.id} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white">{item.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(item.date)}</p>
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      {(item.receiptUrl || item.receiptImage) && (
+                        item.receiptUrl ? (
+                          <a
+                            href={item.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-blue-600 dark:text-blue-400"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        ) : (
+                          <span className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-green-600 dark:text-green-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </span>
+                        )
+                      )}
+                      <button
+                        onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }}
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">{formatCurrency(item.totalAmount)}</p>
+                  <div className="space-y-1 text-sm">
+                    {item.splits.filter(s => s.amount > 0).map((split) => {
+                      const participant = participants.find(p => p.id === split.participantId);
                       return (
-                        <td key={p.id} className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">
-                          {split && split.amount > 0 ? formatCurrency(split.amount) : '-'}
-                        </td>
+                        <div key={split.participantId} className="flex justify-between text-gray-600 dark:text-gray-400">
+                          <span>{participant?.name || '-'}</span>
+                          <span>{formatCurrency(split.amount)}</span>
+                        </div>
                       );
                     })}
-                    <td className="px-4 py-3 text-center">
-                      {item.receiptUrl ? (
-                        <a
-                          href={item.receiptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      ) : item.receiptImage ? (
-                        <span className="text-green-600 dark:text-green-400">
-                          <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => { setEditingItem(item); setIsItemModalOpen(true); }}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {/* Totals Row */}
-                <tr className="bg-gray-50 dark:bg-gray-700 font-semibold">
-                  <td className="px-4 py-3" colSpan={2}>{t('common.total')}</td>
-                  <td className="px-4 py-3 text-right text-gray-900 dark:text-white">
-                    {formatCurrency(totalAmount)}
-                  </td>
+                  </div>
+                </div>
+              ))}
+              {/* Mobile Totals */}
+              <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div className="flex justify-between font-semibold text-gray-900 dark:text-white mb-2">
+                  <span>{t('common.total')}</span>
+                  <span>{formatCurrency(totalAmount)}</span>
+                </div>
+                <div className="space-y-1 text-sm">
                   {participants.map((p) => (
-                    <td key={p.id} className="px-4 py-3 text-right text-gray-900 dark:text-white">
-                      {formatCurrency(p.totalAmount)}
-                    </td>
+                    <div key={p.id} className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>{p.name}</span>
+                      <span className="font-medium">{formatCurrency(p.totalAmount)}</span>
+                    </div>
                   ))}
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

@@ -168,7 +168,7 @@ export function Expenses() {
             title={t('expenses.noExpenses')}
             description={t('expenses.addFirstExpense')}
             action={
-              <Button onClick={() => navigate('/expenses/new')}>
+              <Button onClick={() => navigate('/expenses/new')} className="min-h-[44px]">
                 {t('expenses.createReport')}
               </Button>
             }

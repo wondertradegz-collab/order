@@ -139,31 +139,76 @@ export function CustomerDetail() {
         {customerDocuments.length === 0 ? (
           <p className="text-gray-500 text-center py-8">{t('common.noData')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('dashboard.documentType')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('documents.number')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('documents.issueDate')}
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('common.amount')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('common.status')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {customerDocuments.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('dashboard.documentType')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('documents.number')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('documents.issueDate')}
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('common.amount')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('common.status')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {customerDocuments.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                          doc.type === 'quotation' ? 'bg-purple-100 text-purple-700' :
+                          doc.type === 'invoice' ? 'bg-orange-100 text-orange-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {getDocumentTypeLabel(doc.type)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/${doc.type}s/${doc.id}`}
+                          className="font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          {doc.documentNumber}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {formatDate(doc.issueDate)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                        {formatCurrency(doc.total)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
+                          {getStatusLabel(doc.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {customerDocuments.map((doc) => (
+                <Link
+                  key={doc.id}
+                  to={`/${doc.type}s/${doc.id}`}
+                  className="block p-4 hover:bg-gray-50 min-h-[60px]"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
                         doc.type === 'quotation' ? 'bg-purple-100 text-purple-700' :
                         doc.type === 'invoice' ? 'bg-orange-100 text-orange-700' :
@@ -171,31 +216,20 @@ export function CustomerDetail() {
                       }`}>
                         {getDocumentTypeLabel(doc.type)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        to={`/${doc.type}s/${doc.id}`}
-                        className="font-medium text-blue-600 hover:text-blue-700"
-                      >
-                        {doc.documentNumber}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {formatDate(doc.issueDate)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                      {formatCurrency(doc.total)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                        {getStatusLabel(doc.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <span className="font-medium text-blue-600">{doc.documentNumber}</span>
+                    </div>
+                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
+                      {getStatusLabel(doc.status)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">{formatDate(doc.issueDate)}</span>
+                    <span className="font-medium text-gray-900">{formatCurrency(doc.total)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

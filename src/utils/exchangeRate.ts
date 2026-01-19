@@ -18,34 +18,16 @@ export async function getLatestExchangeRate(
   base: string = 'CNY',
   target: string = 'JPY'
 ): Promise<ExchangeRateResult> {
-  // API 1: Open Exchange Rates (無料、APIキー不要)
-  try {
-    const response = await fetch(
-      `https://open.er-api.com/v6/latest/${base}`,
-      { signal: AbortSignal.timeout(5000) }
-    );
+  const errors: string[] = [];
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.result === 'success' && data.rates?.[target]) {
-        return {
-          rate: Math.round(data.rates[target] * 100) / 100,
-          date: data.time_last_update_utc?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          base,
-          target,
-          isFallback: false,
-        };
-      }
-    }
-  } catch {
-    // 次のAPIを試す
-  }
-
-  // API 2: ExchangeRate-API (無料枠)
+  // API 1: ExchangeRate-API v4 (無料、APIキー不要、CORS対応)
   try {
     const response = await fetch(
       `https://api.exchangerate-api.com/v4/latest/${base}`,
-      { signal: AbortSignal.timeout(5000) }
+      {
+        signal: AbortSignal.timeout(8000),
+        headers: { 'Accept': 'application/json' }
+      }
     );
 
     if (response.ok) {
@@ -60,9 +42,76 @@ export async function getLatestExchangeRate(
         };
       }
     }
-  } catch {
-    // フォールバックへ
+    errors.push(`API1: status ${response.status}`);
+  } catch (e) {
+    errors.push(`API1: ${e instanceof Error ? e.message : 'error'}`);
   }
+
+  // API 2: Open Exchange Rates (無料、APIキー不要)
+  try {
+    const response = await fetch(
+      `https://open.er-api.com/v6/latest/${base}`,
+      {
+        signal: AbortSignal.timeout(8000),
+        headers: { 'Accept': 'application/json' }
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.result === 'success' && data.rates?.[target]) {
+        return {
+          rate: Math.round(data.rates[target] * 100) / 100,
+          date: data.time_last_update_utc?.split(' ')[0] || new Date().toISOString().split('T')[0],
+          base,
+          target,
+          isFallback: false,
+        };
+      }
+    }
+    errors.push(`API2: status ${response.status}`);
+  } catch (e) {
+    errors.push(`API2: ${e instanceof Error ? e.message : 'error'}`);
+  }
+
+  // API 3: Frankfurter経由（CNY非対応なのでUSD経由で計算）
+  if (base === 'CNY' && target === 'JPY') {
+    try {
+      // USD/JPYレートを取得
+      const usdJpyResponse = await fetch(
+        'https://api.frankfurter.app/latest?from=USD&to=JPY',
+        {
+          signal: AbortSignal.timeout(8000),
+          headers: { 'Accept': 'application/json' }
+        }
+      );
+
+      if (usdJpyResponse.ok) {
+        const usdJpyData = await usdJpyResponse.json();
+        const usdToJpy = usdJpyData.rates?.JPY;
+
+        if (usdToJpy) {
+          // CNY/USD の概算レート（比較的安定: 1 CNY ≈ 0.137 USD）
+          const cnyToUsd = 0.137;
+          const cnyToJpy = cnyToUsd * usdToJpy;
+
+          return {
+            rate: Math.round(cnyToJpy * 100) / 100,
+            date: usdJpyData.date || new Date().toISOString().split('T')[0],
+            base,
+            target,
+            isFallback: false, // USD/JPYはリアルタイム
+          };
+        }
+      }
+      errors.push(`API3: Frankfurter failed`);
+    } catch (e) {
+      errors.push(`API3: ${e instanceof Error ? e.message : 'error'}`);
+    }
+  }
+
+  // デバッグ用にエラーをコンソール出力
+  console.warn('Exchange rate API errors:', errors);
 
   // フォールバック: 概算レートを使用
   return await getExchangeRateFromFallback(base, target, 'latest');
@@ -94,6 +143,8 @@ async function getExchangeRateFromFallback(
   target: string,
   date: string
 ): Promise<ExchangeRateResult> {
+  console.warn(`Using fallback exchange rate for ${base}/${target}`);
+
   // 概算レート（2025年1月時点の相場を基準、定期的に更新推奨）
   const estimatedRates: Record<string, Record<string, number>> = {
     CNY: {

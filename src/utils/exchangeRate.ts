@@ -6,6 +6,7 @@ export interface ExchangeRateResult {
   date: string;
   base: string;
   target: string;
+  isFallback?: boolean; // APIが使えずフォールバック値を使用した場合true
 }
 
 export interface ExchangeRateError {
@@ -44,6 +45,7 @@ export async function getLatestExchangeRate(
       date: data.date || new Date().toISOString().split('T')[0],
       base,
       target,
+      isFallback: false,
     };
   } catch {
     // フォールバック
@@ -82,6 +84,7 @@ export async function getHistoricalExchangeRate(
       date: data.date || date,
       base,
       target,
+      isFallback: false,
     };
   } catch {
     return await getExchangeRateFromFallback(base, target, date);
@@ -121,6 +124,7 @@ async function getExchangeRateFromFallback(
       date: date === 'latest' ? new Date().toISOString().split('T')[0] : date,
       base,
       target,
+      isFallback: true, // APIが使えずフォールバック値を使用
     };
   } catch {
     throw new Error('為替レートの取得に失敗しました。手動で入力してください。');
@@ -155,6 +159,7 @@ export async function getExchangeRateRange(
             date,
             base,
             target,
+            isFallback: false,
           });
         }
       }

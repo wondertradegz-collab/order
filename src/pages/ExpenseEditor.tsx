@@ -29,6 +29,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
   const [rateError, setRateError] = useState<string | null>(null);
   const [rateFetchDate, setRateFetchDate] = useState<string>('latest');
   const [rateInfo, setRateInfo] = useState<string | null>(null);
+  const [isRateFallback, setIsRateFallback] = useState(false); // APIが使えずフォールバック値を使用中
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
@@ -71,6 +72,7 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
     setIsFetchingRate(true);
     setRateError(null);
     setRateInfo(null);
+    setIsRateFallback(false);
 
     try {
       let result;
@@ -91,6 +93,11 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
       }
 
       setExchangeRate(result.rate);
+
+      // APIが使えずフォールバック値を使用した場合は警告を表示
+      if (result.isFallback) {
+        setIsRateFallback(true);
+      }
     } catch (error) {
       setRateError(error instanceof Error ? error.message : t('common.error'));
     } finally {
@@ -348,6 +355,25 @@ export function ExpenseEditor({ mode }: ExpenseEditorProps) {
               </Button>
             </div>
           </div>
+
+          {/* Fallback Warning */}
+          {isRateFallback && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    {t('expenses.apiUnavailable')}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                    {t('expenses.usingEstimatedRate')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {rateError && (

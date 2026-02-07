@@ -32,6 +32,80 @@ import type {
 } from '../types';
 
 
+// デフォルト顧客データ
+const defaultCustomers: Customer[] = [
+  {
+    id: 'default-customer-1',
+    name: '',
+    companyName: '株式会社ADAPTREND',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-2',
+    name: '',
+    companyName: '株式会社TradeFKJapan',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-3',
+    name: '',
+    companyName: 'エコ設備株式会社',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-4',
+    name: '',
+    companyName: '株式会社エスフォーアール',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-5',
+    name: '',
+    companyName: 'グービス株式会社',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-6',
+    name: '',
+    companyName: '株式会社グランストック',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-7',
+    name: '',
+    companyName: 'メビア',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-8',
+    name: '',
+    companyName: '株式会社オリジンツリー',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-9',
+    name: '',
+    companyName: '合同会社ジャパングローバルトレイド',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'default-customer-10',
+    name: '',
+    companyName: '合同会社スカイシーインターナショナル',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+  },
+];
+
 // デフォルト設定
 const defaultSettings: AppSettings = {
   companyInfo: {
@@ -165,7 +239,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [customers, setCustomers] = useLocalStorage<Customer[]>('invoice-app-customers', []);
+  const [customers, setCustomers] = useLocalStorage<Customer[]>('invoice-app-customers', defaultCustomers);
   const [documents, setDocuments] = useLocalStorage<Document[]>('invoice-app-documents', []);
   const [products, setProducts] = useLocalStorage<Product[]>('invoice-app-products', []);
   const [paymentRecords, setPaymentRecords] = useLocalStorage<PaymentRecord[]>('invoice-app-payments', []);

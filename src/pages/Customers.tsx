@@ -118,10 +118,10 @@ export function Customers() {
                       <td className="px-6 py-4">
                         <div>
                           <Link to={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:text-blue-700">
-                            {customer.name}
+                            {customer.companyName}
                           </Link>
-                          {customer.companyName && (
-                            <p className="text-sm text-gray-500">{customer.companyName}</p>
+                          {customer.name && (
+                            <p className="text-sm text-gray-500">{customer.name}</p>
                           )}
                         </div>
                       </td>
@@ -173,10 +173,10 @@ export function Customers() {
                   <div className="flex items-start justify-between">
                     <div>
                       <Link to={`/customers/${customer.id}`} className="font-medium text-blue-600 hover:text-blue-700">
-                        {customer.name}
+                        {customer.companyName}
                       </Link>
-                      {customer.companyName && (
-                        <p className="text-sm text-gray-500">{customer.companyName}</p>
+                      {customer.name && (
+                        <p className="text-sm text-gray-500">{customer.name}</p>
                       )}
                     </div>
                     <div className="flex gap-1">
@@ -227,7 +227,7 @@ export function Customers() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title={t('common.delete')}
-        message={`${deleteTarget?.name} ${t('documents.deleteConfirm')}`}
+        message={`${deleteTarget?.companyName} ${t('documents.deleteConfirm')}`}
         confirmText={t('common.delete')}
         variant="danger"
       />
@@ -313,15 +313,15 @@ function CustomerFormModal({ isOpen, onClose, onSave, customer }: CustomerFormMo
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label={`${t('customers.contactPerson')} *`}
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            label={`${t('customers.companyName')} *`}
+            value={formData.companyName}
+            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
             required
           />
           <Input
-            label={t('customers.companyName')}
-            value={formData.companyName}
-            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+            label={t('customers.contactPerson')}
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

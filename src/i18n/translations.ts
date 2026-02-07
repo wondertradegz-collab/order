@@ -735,6 +735,13 @@ export const translations = {
     splitTotal: { ja: '配分合計', zh: '分摊合计', en: 'Split Total' },
     splitMismatch: { ja: '合計と一致していません', zh: '与总金额不符', en: 'Does not match total' },
   },
+
+  // Not Found Page
+  notFound: {
+    title: { ja: 'ページが見つかりません', zh: '页面未找到', en: 'Page Not Found' },
+    message: { ja: 'お探しのページは存在しないか、移動された可能性があります。', zh: '您查找的页面不存在或已被移动。', en: 'The page you are looking for does not exist or has been moved.' },
+    backHome: { ja: 'ホームに戻る', zh: '返回首页', en: 'Back to Home' },
+  },
 } as const;
 
 // Helper function to get translation

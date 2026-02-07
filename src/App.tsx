@@ -21,6 +21,7 @@ import {
   ExpenseSplits,
   ExpenseSplitEditor,
   Login,
+  NotFound,
 } from './pages';
 
 // Protected routes wrapper
@@ -60,6 +61,7 @@ function ProtectedRoutes() {
         <Route path="/memos" element={<Memos />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   );

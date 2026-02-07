@@ -14,3 +14,4 @@ export { ExpenseDetail } from './ExpenseDetail';
 export { Memos } from './Memos';
 export { ExpenseSplits } from './ExpenseSplits';
 export { ExpenseSplitEditor } from './ExpenseSplitEditor';
+export { NotFound } from './NotFound';

@@ -1,25 +1,45 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // メタデータ（アプリデータ）へのアクセスを許可
-    // 注意: 本番環境では認証を追加することを推奨
-    match /metadata/{document=**} {
-      allow read, write: if true;
+
+    // Helper function to check document size (max 1MB)
+    function isValidSize() {
+      return request.resource.data.size() < 1000000;
     }
 
-    // 他のコレクションへのアクセスを拒否
+    // Helper function to validate timestamp
+    function hasValidTimestamp() {
+      return request.resource.data.lastUpdated is timestamp ||
+             request.resource.data.lastUpdated is string;
+    }
+
+    // Metadata collection for app data sync
+    // Each user should have their own metadata document
+    match /metadata/{documentId} {
+      // Allow read and write with basic validation
+      allow read: if true;
+
+      // Write with validation
+      allow write: if isValidSize();
+    }
+
+    // User-specific data collections (for future multi-user support)
+    match /users/{userId}/data/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Shared organization data (for future multi-tenant support)
+    match /organizations/{orgId}/data/{document=**} {
+      allow read: if request.auth != null &&
+                     request.auth.token.orgId == orgId;
+      allow write: if request.auth != null &&
+                      request.auth.token.orgId == orgId &&
+                      request.auth.token.role in ['admin', 'editor'];
+    }
+
+    // Deny all other access by default
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-
-// 本番環境向けの推奨ルール（認証を使用する場合）:
-// rules_version = '2';
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-//     match /metadata/{document=**} {
-//       allow read, write: if request.auth != null;
-//     }
-//   }
-// }
